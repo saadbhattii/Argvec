@@ -1,14 +1,14 @@
-# Amplitude Bench
+# Amplitude bench
 
-Amplitude bench is a drag-and-drop circuit builder for 1 to 5 qubits (up to 32 amplitudes). For each step it shows the whole statevector before and after the gate, and animates how the amplitudes flow from one to the other.
+Amplitude bench is a quantum statevector visualizer with a drag-and-drop circuit builder for up to 5 qubits or 32 amplitudes. For each step it shows the whole statevector before and after the gate, and animates how the amplitudes evolve from one to the other.
 
 Quantum mechanics is formulated over complex Hilbert spaces. Yet many of our common visual and pedagogical tools translate quantum states into real-valued representations, emphasizing geometry or probabilities over the complex amplitudes themselves.
 
-This project was created out of curiosity for visualizing quantum states in their native complex representation, or how the statevector itself evolves through unitary transformations.
+This project was created out of curiosity for visualizing quantum states in their native complex representation, and how the statevector itself evolves through unitary transformations.
 
 ## User Interface
 
-![alt text](/docs/screenshot.png)
+![Amplitude bench](docs/screenshot.png)
 
 ## Features
 
