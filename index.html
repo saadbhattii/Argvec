@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Amplitude Bench</title>
+<meta name="description" content="Drag-and-drop quantum circuit visualizer that shows how every gate moves, rotates or mixes the amplitudes of the statevector, for 1 to 5 qubits.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<!-- Open Graph / social preview -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Amplitude Bench">
+<meta property="og:description" content="Watch quantum gates move, rotate and mix the statevector. Drag-and-drop circuits on 1 to 5 qubits.">
+<meta property="og:url" content="https://saadbhattii.github.io/amplitude-bench/">
+<meta property="og:image" content="https://saadbhattii.github.io/amplitude-bench/docs/screenshot.png">
+<meta property="og:image:width" content="2160">
+<meta property="og:image:height" content="1350">
+<meta property="og:image:alt" content="Amplitude bench showing a 3-qubit circuit and the statevector before and after a gate">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://saadbhattii.github.io/amplitude-bench/docs/screenshot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4F7; --panel:#FFFFFF; --soft:#EDF0F4; --ink:#17202B; --muted:#5A6575; --faint:#8C96A4;
+  --rule:#D8DDE5; --rule-strong:#B9C1CC; --accent:#2350D0; --sel:rgba(35,80,208,.09); --danger:#C0392B;
+  --mover:#6A4ED2; --rotator:#B4730B; --mixer:#0D857B; --identity:#8C96A4; --bloch:#2350D0;
+  --phase-l:40%; --phase-s:74%;
+  --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1218; --panel:#151B23; --soft:#1B222C; --ink:#E4E9F0; --muted:#9AA5B4; --faint:#6C7787;
+    --rule:#28313D; --rule-strong:#3A4553; --accent:#7096FF; --sel:rgba(112,150,255,.13); --danger:#F0705F;
+    --mover:#A08CF5; --rotator:#E6A848; --mixer:#3FC4B5; --identity:#6C7787; --bloch:#7096FF;
+    --phase-l:66%; --phase-s:72%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1218; --panel:#151B23; --soft:#1B222C; --ink:#E4E9F0; --muted:#9AA5B4; --faint:#6C7787;
+  --rule:#28313D; --rule-strong:#3A4553; --accent:#7096FF; --sel:rgba(112,150,255,.13); --danger:#F0705F;
+  --mover:#A08CF5; --rotator:#E6A848; --mixer:#3FC4B5; --identity:#6C7787; --bloch:#7096FF;
+  --phase-l:66%; --phase-s:72%;
+  color-scheme: dark;
+}
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); scrollbar-gutter:stable; overflow-y:scroll; }
+*,*::before,*::after{ box-sizing:inherit; }
+body{ margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 var(--sans); -webkit-font-smoothing:antialiased; }
+body.dragging, body.dragging *{ cursor:grabbing !important; user-select:none; -webkit-user-select:none; }
+h1,h2,h3{ margin:0; font-weight:600; letter-spacing:-.01em; }
+h1{ font-size:22px; }
+h2{ font-size:15px; }
+button,select,input{ font:inherit; color:inherit; }
+button{ cursor:pointer; }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+.wrap{ max-width:1680px; margin:0 auto; padding:0 20px; }
+.top{ display:flex; flex-wrap:wrap; gap:14px 32px; align-items:flex-end; justify-content:space-between; padding:18px 0 14px; }
+.brand p{ margin:4px 0 0; color:var(--muted); max-width:62ch; font-size:14px; }
+.hdr{ display:flex; flex-wrap:wrap; gap:12px 20px; align-items:flex-end; }
+.field{ display:flex; flex-direction:column; gap:4px; }
+.flabel{ font-size:12.5px; color:var(--muted); }
+.init-slot{ display:inline-flex; width:118px; }
+.init-slot [hidden]{ display:none; }
+.row{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.seg{ display:inline-flex; border:1px solid var(--rule-strong); border-radius:8px; overflow:hidden; background:var(--panel); }
+.seg button{ border:0; background:none; padding:6px 12px; min-width:36px; border-right:1px solid var(--rule); font-family:var(--mono); font-size:13.5px; }
+.seg button:last-child{ border-right:0; }
+.seg button[aria-pressed="true"]{ background:var(--ink); color:var(--panel); }
+#theme button{ font-family:var(--sans); font-size:13.5px; }
+select,input[type=text],input[type=number]{ background:var(--panel); border:1px solid var(--rule-strong); border-radius:7px; padding:6px 8px; min-height:34px; }
+input[type=text]{ font-family:var(--mono); width:9ch; }
+.btn{ background:var(--panel); border:1px solid var(--rule-strong); border-radius:7px; padding:6px 11px; min-height:34px; }
+.btn:hover:not(:disabled){ border-color:var(--ink); }
+.btn:disabled{ opacity:.45; cursor:not-allowed; }
+.btn.primary{ background:var(--ink); color:var(--panel); border-color:var(--ink); }
+.btn.danger:hover:not(:disabled){ border-color:var(--danger); color:var(--danger); }
+
+.panel{ background:var(--panel); border:1px solid var(--rule); border-radius:12px; }
+.panel > section{ padding:14px 16px; }
+.panel > section + section{ border-top:1px solid var(--rule); }
+
+/* page layout: toolbox on the left, work area on the right */
+.layout{ display:grid; grid-template-columns:268px minmax(0,1fr); gap:14px; align-items:start; padding-bottom:24px; }
+.side{ position:sticky; top:calc(10px + env(safe-area-inset-top,0px)); display:flex; flex-direction:column; gap:14px;
+       max-height:calc(100vh - 20px - env(safe-area-inset-top,0px)); overflow:auto; overscroll-behavior:contain; border-radius:12px; }
+.maincol{ min-width:0; }
+
+/* toolbox */
+.toolbox{ padding:12px 14px 14px; }
+.tb-head p{ margin:4px 0 0; font-size:12.5px; color:var(--muted); }
+.tb-groups{ display:flex; flex-direction:column; gap:12px; margin-top:10px; }
+.tb-group h3{ font-size:12.5px; font-weight:500; color:var(--muted); margin-bottom:5px; }
+.chips{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+.chip.wide{ grid-column:span 2; }
+.chip.full{ grid-column:1 / -1; }
+.chip{ border:1px solid var(--rule-strong); background:var(--panel); border-radius:7px; padding:6px 4px; justify-content:center; font-family:var(--mono); font-size:13px; white-space:nowrap;
+       cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; display:inline-flex; align-items:center; gap:6px; }
+.chip:hover:not(:disabled){ border-color:var(--ink); }
+.chip:disabled{ opacity:.35; cursor:not-allowed; }
+.chip.f-mover{ border-bottom:2.5px solid var(--mover); }
+.chip.f-rotator{ border-bottom:2.5px solid var(--rotator); }
+.chip.f-mixer{ border-bottom:2.5px solid var(--mixer); }
+.chip.f-identity{ border-bottom:2.5px solid var(--identity); }
+.chip.probe{ border-color:var(--bloch); color:var(--bloch); font-family:var(--sans); }
+.ghost{ position:fixed; left:0; top:0; z-index:50; pointer-events:none; transform:translate(-50%,-130%); background:var(--ink); color:var(--panel);
+        font-family:var(--mono); font-size:13px; padding:5px 10px; border-radius:7px; box-shadow:0 6px 18px rgba(0,0,0,.18); white-space:nowrap; }
+.ghost.del{ background:var(--danger); color:#fff; }
+
+/* circuit */
+.circuit{ margin-bottom:14px; }
+.circuit-head{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 16px; padding:12px 16px 8px; min-height:58px; }
+.stage-head{ display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:12px 16px 10px; }
+.one-line{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.stage-head .transport{ padding-top:10px; border-top:1px solid var(--rule); }
+.transport{ display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+.transport .btn{ min-width:38px; padding:5px 9px; }
+.stepinfo{ font-family:var(--mono); font-size:13px; color:var(--muted); margin:0 4px; width:8ch; flex:none; text-align:center; font-variant-numeric:tabular-nums; }
+.transport .btn{ flex:none; }
+.transport .btn.play{ width:72px; }
+.circuit-scroll{ overflow-x:auto; padding:0 8px 6px; scrollbar-gutter:stable; }
+#circWrap{ position:relative; display:inline-block; vertical-align:top; }
+#circ{ display:block; }
+#circOver{ position:absolute; left:0; top:0; pointer-events:none; overflow:visible; }
+#circ .col{ cursor:pointer; }
+#circ .col.drag{ cursor:grab; touch-action:none; }
+#circ text{ font-family:var(--mono); }
+.circ-foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 16px; padding:0 16px 12px; font-size:12.5px; color:var(--muted); min-height:30px; }
+#circHint{ flex:1 1 300px; min-width:0; }
+.circ-foot label{ display:inline-flex; gap:5px; align-items:center; cursor:pointer; }
+
+/* lower grid */
+.grid{ display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; align-items:start; }
+.center{ min-width:0; }
+
+.ed-head{ display:flex; flex-direction:column; gap:2px; }
+.ed-name{ font-family:var(--mono); font-size:15px; margin-top:6px; }
+.ed-mode{ font-size:12.5px; color:var(--muted); }
+.roles{ margin-top:10px; display:flex; flex-direction:column; gap:5px; }
+.role-row{ display:grid; grid-template-columns:30px 1fr; align-items:center; gap:6px; }
+.role-row .q{ font-family:var(--mono); font-size:13px; color:var(--muted); }
+.role-seg{ display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--rule-strong); border-radius:7px; overflow:hidden; }
+.role-seg button{ border:0; border-right:1px solid var(--rule); background:var(--panel); padding:5px 0; font-size:12.5px; }
+.role-seg button:last-child{ border-right:0; }
+.role-seg button[aria-pressed="true"]{ background:var(--ink); color:var(--panel); }
+.hint{ font-size:12.5px; color:var(--muted); margin:8px 0 0; }
+.hint.lead{ font-size:14px; color:var(--ink); }
+.warn{ color:var(--danger); }
+.params{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+.param{ display:grid; grid-template-columns:18px 1fr 74px; gap:8px; align-items:center; }
+.param span{ font-family:var(--mono); }
+.param input[type=number]{ width:74px; min-height:30px; padding:4px 6px; }
+input[type=range]{ accent-color:var(--accent); width:100%; }
+.ed-actions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+
+.view-opts{ display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:13px; color:var(--muted); }
+.view-opts label{ display:inline-flex; gap:5px; align-items:center; cursor:pointer; }
+.view-opts select{ min-height:28px; padding:2px 6px; font-size:13px; }
+.view-opts input[type=range]{ width:80px; }
+.stage-wrap{ position:relative; padding:0 6px 6px; }
+#stage{ display:block; width:100%; touch-action:manipulation; }
+#tip{ position:absolute; pointer-events:none; background:var(--ink); color:var(--panel); border-radius:8px; padding:7px 10px; font-size:12.5px; line-height:1.45; max-width:300px; opacity:0; transition:opacity .08s; z-index:3; }
+#tip.on{ opacity:1; }
+#tip .m{ font-family:var(--mono); }
+.legend{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; padding:10px 16px 14px; border-top:1px solid var(--rule); font-size:12.5px; color:var(--muted); }
+.legend .sw{ display:inline-block; width:18px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px; }
+.legend canvas{ vertical-align:middle; margin-right:6px; }
+
+.badge{ display:inline-block; font-size:12px; font-weight:500; padding:2px 9px; border-radius:20px; border:1px solid currentColor; }
+.f-mover{ color:var(--mover); } .f-rotator{ color:var(--rotator); } .f-mixer{ color:var(--mixer); } .f-identity{ color:var(--identity); }
+.chip.f-mover,.chip.f-rotator,.chip.f-mixer,.chip.f-identity{ color:var(--ink); }
+#gateCard{ min-height:330px; }
+#editor{ min-height:300px; }
+.gc-title{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.gc-name{ font-family:var(--mono); font-size:17px; font-weight:500; }
+.gc-step{ font-size:12.5px; color:var(--muted); margin-bottom:4px; }
+.gc-where{ font-size:13.5px; color:var(--muted); margin:4px 0 0; }
+.gc-desc{ margin:10px 0 0; font-size:14px; }
+.mat{ margin-top:12px; display:flex; gap:12px; align-items:center; }
+.mat table{ border-collapse:collapse; font-family:var(--mono); font-size:13px; border-left:1.5px solid var(--ink); border-right:1.5px solid var(--ink); }
+.mat td{ padding:3px 10px; text-align:center; white-space:nowrap; }
+.mat .cap{ font-size:12.5px; color:var(--muted); }
+.qt-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.qt-head label{ font-size:12.5px; color:var(--muted); display:inline-flex; gap:5px; align-items:center; cursor:pointer; }
+.qt{ width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; }
+.qt th{ text-align:left; font-weight:500; color:var(--muted); font-size:12.5px; padding:4px 6px; border-bottom:1px solid var(--rule); }
+.qt td{ padding:3px 6px; border-bottom:1px solid var(--soft); font-family:var(--mono); font-size:12.5px; vertical-align:top; }
+.qt tr.same td{ color:var(--faint); }
+.qt td:first-child{ white-space:nowrap; color:var(--muted); width:1%; }
+.qt-wrap{ max-height:420px; overflow:auto; }
+.qb{ display:grid; grid-template-columns:auto 30px 1fr; gap:6px 10px; align-items:center; margin-top:8px; font-size:13px; }
+.qb svg{ display:block; }
+.qb .q{ font-family:var(--mono); color:var(--muted); }
+.qb .meta{ font-family:var(--mono); font-size:12px; color:var(--muted); line-height:1.5; }
+.qb .bar{ display:block; height:6px; background:var(--soft); border-radius:3px; overflow:hidden; margin-top:3px; }
+.qb .bar i{ display:block; height:100%; background:var(--ink); }
+.qb .ent{ color:var(--mixer); }
+.note{ font-size:12.5px; color:var(--muted); margin:8px 0 0; }
+
+#toast{ position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--panel); padding:8px 14px; border-radius:8px; font-size:13.5px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:60; max-width:90vw; }
+#toast.on{ opacity:1; }
+
+@media (max-width:1280px){
+  .grid{ grid-template-columns:minmax(0,1fr); }
+}
+@media (max-width:820px){
+  .wrap{ padding:0 10px; }
+  .layout{ grid-template-columns:minmax(0,1fr); }
+  .side{ position:static; max-height:none; overflow:visible; }
+  .top{ padding:14px 0 10px; }
+}
+@media (prefers-reduced-motion: reduce){ #tip,#toast{ transition:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <h1>Amplitude Bench</h1>
+    <p>Drag gates onto the circuit and step through it. Every gate either moves, rotates or mixes the 2ⁿ amplitudes of the statevector, and you can watch each one happen.</p>
+  </div>
+  <div class="hdr">
+    <div class="field">
+      <span class="flabel" id="nqLabel">Qubits</span>
+      <div class="seg" id="nq" role="group" aria-labelledby="nqLabel"></div>
+    </div>
+    <div class="field">
+      <label class="flabel" for="initKind">Start in</label>
+      <div class="row">
+        <select id="initKind">
+          <option value="zero">All zeros</option>
+          <option value="basis">A basis state</option>
+          <option value="plus">Equal superposition</option>
+          <option value="random">Random state</option>
+        </select>
+        <span class="init-slot">
+          <input type="text" id="initBits" aria-label="Basis state bits" spellcheck="false" autocomplete="off">
+          <button class="btn" id="reroll" type="button">New random</button>
+        </span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="flabel" for="example">Load an example</label>
+      <select id="example"></select>
+    </div>
+    <div class="field">
+      <span class="flabel" id="themeLabel">Theme</span>
+      <div class="seg" id="theme" role="group" aria-labelledby="themeLabel">
+        <button type="button" data-theme="light">Light</button><button type="button" data-theme="dark">Dark</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="side">
+
+<section class="panel toolbox" aria-label="Gate toolbox">
+  <div class="tb-head">
+    <h2>Toolbox</h2>
+    <p>Drag a gate onto a qubit wire. Drag the Bloch probe between gates to see each qubit at that point.</p>
+  </div>
+  <div class="tb-groups" id="palette"></div>
+</section>
+<div class="panel" id="left">
+  <section id="editor"></section>
+</div>
+</aside>
+
+<div class="maincol">
+
+<section class="panel circuit" aria-label="Circuit">
+  <div class="circuit-head">
+    <h2>Circuit</h2>
+    <div class="transport" id="transportCircuit">
+      <button class="btn" data-act="first" type="button" aria-label="Go to start" title="Go to start (Home)">⏮</button>
+      <button class="btn" data-act="prev" type="button" aria-label="Previous step" title="Previous step (←)">◀</button>
+      <span class="stepinfo">0 / 0</span>
+      <button class="btn" data-act="next" type="button" aria-label="Next step" title="Next step (→)">▶</button>
+      <button class="btn" data-act="last" type="button" aria-label="Go to end" title="Go to end (End)">⏭</button>
+      <button class="btn play" data-act="play" type="button" title="Play all steps (Space)">Play</button>
+      <button class="btn" data-act="replay" type="button" title="Replay this step (R)">Replay step</button>
+      <button class="btn" data-act="undo" type="button" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="btn danger" data-act="clear" type="button">Clear</button>
+    </div>
+  </div>
+  <div class="circuit-scroll" id="circScroll">
+    <div id="circWrap">
+      <svg id="circ" role="img" aria-label="Circuit diagram"></svg>
+      <svg id="circOver" aria-hidden="true"></svg>
+    </div>
+  </div>
+  <div class="circ-foot">
+    <span id="circHint">Drag a placed gate to move it, or drag it off the circuit to delete it. Click a gate to select and edit it.</span>
+    <label><input type="checkbox" id="optBlochAll"> Bloch spheres after every gate</label>
+  </div>
+</section>
+
+<main class="grid">
+  <div class="center">
+    <div class="panel">
+      <div class="stage-head">
+        <h2 id="stageTitle" class="one-line">Statevector</h2>
+        <div class="view-opts">
+          <label>Layout
+            <select id="optLayout">
+              <option value="rows" selected>Rows</option>
+              <option value="auto">Auto</option>
+              <option value="cols">Columns</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="optMag" checked> Magnify small amplitudes</label>
+          <label><input type="checkbox" id="optSum" checked> Show sums on mixers</label>
+          <label><input type="checkbox" id="optAnim" checked> Animate</label>
+          <label>Speed <input type="range" id="optSpeed" min="300" max="2400" step="100" value="2400" aria-label="Animation duration"></label>
+        </div>
+        <div class="transport" id="transportStage" role="group" aria-label="Step controls">
+          <button class="btn" data-act="first" type="button" aria-label="Go to start" title="Go to start (Home)">⏮</button>
+          <button class="btn" data-act="prev" type="button" aria-label="Previous step" title="Previous step (←)">◀</button>
+          <span class="stepinfo">0 / 0</span>
+          <button class="btn" data-act="next" type="button" aria-label="Next step" title="Next step (→)">▶</button>
+          <button class="btn" data-act="last" type="button" aria-label="Go to end" title="Go to end (End)">⏭</button>
+          <button class="btn play" data-act="play" type="button" title="Play all steps (Space)">Play</button>
+          <button class="btn" data-act="replay" type="button" title="Replay this step (R)">Replay step</button>
+          <button class="btn" data-act="undo" type="button" title="Undo (Ctrl+Z)">Undo</button>
+          <button class="btn danger" data-act="clear" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="stage-wrap" id="stageWrap">
+        <canvas id="stage" aria-label="Statevector before and after the current gate"></canvas>
+        <div id="tip" role="tooltip"></div>
+      </div>
+      <div class="legend">
+        <span><canvas id="wheel" width="44" height="44" style="width:22px;height:22px"></canvas>Arrow colour = phase, length = magnitude</span>
+        <span><i class="sw" style="background:var(--mover)"></i>Mover</span>
+        <span><i class="sw" style="background:var(--rotator)"></i>Rotator</span>
+        <span><i class="sw" style="background:var(--mixer)"></i>Mixer</span>
+        <span><i class="sw" style="background:var(--rule-strong)"></i>Untouched</span>
+      </div>
+    </div>
+  </div>
+
+  <aside class="panel" id="right">
+    <section id="gateCard"></section>
+    <section id="qubits"></section>
+    <section id="qruth"></section>
+  </aside>
+</main>
+</div>
+</div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script id="core">
+/* Pure statevector core. No DOM access. */
+var Q = (function () {
+  "use strict";
+  var PI = Math.PI, R2 = Math.SQRT1_2;
+  function ei(t) { return [Math.cos(t), Math.sin(t)]; }
+  function m(a, b, c, d) { return [a, b, c, d]; }
+
+  // Matrices are [M00, M01, M10, M11]; new0 = M00*old0 + M01*old1.
+  // kind 1 acts on one target qubit; kind 2 acts on the |01>,|10> pair of two targets.
+  var BASE = {
+    I:    { label: "I",   name: "Identity", kind: 1, params: [], m: function () { return m([1,0],[0,0],[0,0],[1,0]); } },
+    X:    { label: "X",   name: "Pauli-X", kind: 1, params: [], m: function () { return m([0,0],[1,0],[1,0],[0,0]); } },
+    Y:    { label: "Y",   name: "Pauli-Y", kind: 1, params: [], m: function () { return m([0,0],[0,-1],[0,1],[0,0]); } },
+    Z:    { label: "Z",   name: "Pauli-Z", kind: 1, params: [], m: function () { return m([1,0],[0,0],[0,0],[-1,0]); } },
+    H:    { label: "H",   name: "Hadamard", kind: 1, params: [], m: function () { return m([R2,0],[R2,0],[R2,0],[-R2,0]); } },
+    S:    { label: "S",   name: "S (phase 90°)", kind: 1, params: [], m: function () { return m([1,0],[0,0],[0,0],[0,1]); } },
+    Sdg:  { label: "S†",  name: "S-dagger", kind: 1, params: [], m: function () { return m([1,0],[0,0],[0,0],[0,-1]); } },
+    T:    { label: "T",   name: "T (phase 45°)", kind: 1, params: [], m: function () { return m([1,0],[0,0],[0,0],ei(PI/4)); } },
+    Tdg:  { label: "T†",  name: "T-dagger", kind: 1, params: [], m: function () { return m([1,0],[0,0],[0,0],ei(-PI/4)); } },
+    SX:   { label: "√X",  name: "Square root of X", kind: 1, params: [], m: function () { return m([.5,.5],[.5,-.5],[.5,-.5],[.5,.5]); } },
+    SXdg: { label: "√X†", name: "Inverse square root of X", kind: 1, params: [], m: function () { return m([.5,-.5],[.5,.5],[.5,.5],[.5,-.5]); } },
+    Rx:   { label: "Rx",  name: "X rotation", kind: 1, params: ["θ"], def: [90],
+            m: function (t) { var c = Math.cos(t/2), s = Math.sin(t/2); return m([c,0],[0,-s],[0,-s],[c,0]); } },
+    Ry:   { label: "Ry",  name: "Y rotation", kind: 1, params: ["θ"], def: [90],
+            m: function (t) { var c = Math.cos(t/2), s = Math.sin(t/2); return m([c,0],[-s,0],[s,0],[c,0]); } },
+    Rz:   { label: "Rz",  name: "Z rotation", kind: 1, params: ["θ"], def: [90],
+            m: function (t) { return m(ei(-t/2),[0,0],[0,0],ei(t/2)); } },
+    P:    { label: "P",   name: "Phase shift", kind: 1, params: ["φ"], def: [90],
+            m: function (t) { return m([1,0],[0,0],[0,0],ei(t)); } },
+    U:    { label: "U",   name: "General one-qubit gate", kind: 1, params: ["θ","φ","λ"], def: [90,0,180],
+            m: function (t, p, l) { var c = Math.cos(t/2), s = Math.sin(t/2);
+              return m([c,0],[-Math.cos(l)*s,-Math.sin(l)*s],[Math.cos(p)*s,Math.sin(p)*s],[Math.cos(p+l)*c,Math.sin(p+l)*c]); } },
+    SWAP:   { label: "SWAP",  name: "Swap", kind: 2, params: [], m: function () { return m([0,0],[1,0],[1,0],[0,0]); } },
+    ISWAP:  { label: "iSWAP", name: "iSwap", kind: 2, params: [], m: function () { return m([0,0],[0,1],[0,1],[0,0]); } },
+    SQSWAP: { label: "√SWAP", name: "Square root of swap", kind: 2, params: [], m: function () { return m([.5,.5],[.5,-.5],[.5,-.5],[.5,.5]); } }
+  };
+
+  function bit(q, n) { return 1 << (n - 1 - q); }   // q = 0 is q1, the leftmost (most significant) bit
+
+  function matrixOf(g) {
+    var d = BASE[g.base];
+    return d.m.apply(null, (g.params || []).map(function (v) { return v * PI / 180; }));
+  }
+
+  // A gate acts on disjoint pairs of slots with one 2x2 matrix; every other slot is untouched.
+  function compile(g, n) {
+    var N = 1 << n, cm = 0, cv = 0, pairs = [], i;
+    (g.ctrl || []).forEach(function (q) { cm |= bit(q, n); cv |= bit(q, n); });
+    (g.actrl || []).forEach(function (q) { cm |= bit(q, n); });
+    var M = matrixOf(g);
+    if (BASE[g.base].kind === 1) {
+      var t = bit(g.targets[0], n);
+      for (i = 0; i < N; i++) if (!(i & t) && (i & cm) === cv) pairs.push(i, i | t);
+    } else {
+      var m1 = bit(g.targets[0], n), m2 = bit(g.targets[1], n);
+      for (i = 0; i < N; i++) if (!(i & m1) && (i & m2) && (i & cm) === cv) pairs.push(i, i ^ m1 ^ m2);
+    }
+    return { pairs: Int32Array.from(pairs), M: M };
+  }
+
+  // State is interleaved [re0, im0, re1, im1, ...].
+  function apply(st, comp) {
+    var out = st.slice(), p = comp.pairs, a = comp.M[0], b = comp.M[1], c = comp.M[2], d = comp.M[3];
+    for (var x = 0; x < p.length; x += 2) {
+      var i = p[x] * 2, j = p[x + 1] * 2;
+      var ar = st[i], ai = st[i + 1], br = st[j], bi = st[j + 1];
+      out[i]     = a[0]*ar - a[1]*ai + b[0]*br - b[1]*bi;
+      out[i + 1] = a[0]*ai + a[1]*ar + b[0]*bi + b[1]*br;
+      out[j]     = c[0]*ar - c[1]*ai + d[0]*br - d[1]*bi;
+      out[j + 1] = c[0]*ai + c[1]*ar + d[0]*bi + d[1]*br;
+    }
+    return out;
+  }
+
+  // For every output slot, the list of {k: input slot, c: coefficient}. This is the "pull" Qruth table.
+  function flows(comp, N) {
+    var outs = new Array(N), o, x;
+    for (o = 0; o < N; o++) outs[o] = [{ k: o, c: [1, 0] }];
+    var p = comp.pairs, M = comp.M;
+    var nz = function (e) { return Math.hypot(e.c[0], e.c[1]) > 1e-12; };
+    for (x = 0; x < p.length; x += 2) {
+      var i = p[x], j = p[x + 1];
+      outs[i] = [{ k: i, c: M[0] }, { k: j, c: M[1] }].filter(nz);
+      outs[j] = [{ k: i, c: M[2] }, { k: j, c: M[3] }].filter(nz);
+    }
+    return outs;
+  }
+
+  // Family of the whole operator, global phase divided out.
+  function classify(outs) {
+    var ref = null, mono = true, perm = true, allEq = true;
+    for (var o = 0; o < outs.length; o++) {
+      var L = outs[o];
+      if (L.length !== 1) mono = false;
+      for (var e = 0; e < L.length; e++) {
+        var c = L[e].c;
+        if (!ref) ref = c;
+        if (L[e].k !== o) perm = false;
+        if (Math.hypot(c[0] - ref[0], c[1] - ref[1]) > 1e-9) allEq = false;
+      }
+    }
+    if (!mono) return "mixer";
+    if (perm) return allEq ? "identity" : "rotator";
+    return allEq ? "mover" : "mover + phase";
+  }
+
+  function changed(outs, o) {
+    var L = outs[o];
+    return !(L.length === 1 && L[0].k === o && Math.abs(L[0].c[0] - 1) < 1e-12 && Math.abs(L[0].c[1]) < 1e-12);
+  }
+
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function initState(init, n) {
+    var N = 1 << n, st = new Float64Array(2 * N), i;
+    if (init.kind === "basis") {
+      var idx = parseInt(init.bits, 2);
+      st[2 * (isFinite(idx) ? idx % N : 0)] = 1;
+    } else if (init.kind === "plus") {
+      for (i = 0; i < N; i++) st[2 * i] = 1 / Math.sqrt(N);
+    } else if (init.kind === "random") {
+      var r = rng(init.seed || 1), norm = 0;
+      for (i = 0; i < 2 * N; i += 2) {
+        var u1 = Math.max(r(), 1e-12), u2 = r(), u3 = Math.max(r(), 1e-12), u4 = r();
+        st[i] = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * PI * u2);
+        st[i + 1] = Math.sqrt(-2 * Math.log(u3)) * Math.cos(2 * PI * u4);
+        norm += st[i] * st[i] + st[i + 1] * st[i + 1];
+      }
+      norm = Math.sqrt(norm);
+      for (i = 0; i < 2 * N; i++) st[i] /= norm;
+    } else {
+      st[0] = 1;
+    }
+    return st;
+  }
+
+  // Reduced single-qubit state: P(1), Bloch vector, purity length |r| (< 1 means entangled with the rest).
+  function qubitInfo(st, n) {
+    var N = 1 << n, res = [];
+    for (var q = 0; q < n; q++) {
+      var b = bit(q, n), p0 = 0, p1 = 0, xr = 0, xi = 0;
+      for (var i = 0; i < N; i++) {
+        if (i & b) continue;
+        var j = i | b;
+        var ar = st[2*i], ai = st[2*i+1], br = st[2*j], bi = st[2*j+1];
+        p0 += ar*ar + ai*ai; p1 += br*br + bi*bi;
+        xr += ar*br + ai*bi; xi += ar*bi - ai*br;
+      }
+      var x = 2 * xr, y = 2 * xi, z = p0 - p1;
+      res.push({ p1: p1, x: x, y: y, z: z, r: Math.min(1, Math.hypot(x, y, z)) });
+    }
+    return res;
+  }
+
+  function norm(st) { var s = 0; for (var i = 0; i < st.length; i++) s += st[i] * st[i]; return s; }
+
+  function gateName(g) {
+    var d = BASE[g.base], nc = (g.ctrl || []).length + (g.actrl || []).length, name;
+    if (g.base === "X" && nc === 1) name = "CNOT";
+    else if (g.base === "X" && nc === 2) name = "Toffoli";
+    else if (g.base === "SWAP" && nc === 1) name = "Fredkin";
+    else name = (nc > 3 ? "C" + nc + "-" : "C".repeat(nc)) + d.label;
+    if (d.params.length) name += "(" + g.params.map(function (v) { return fmtNum(v) + "°"; }).join(", ") + ")";
+    return name;
+  }
+  function fmtNum(v) { var r = Math.round(v * 100) / 100; return (r < 0 ? "−" : "") + Math.abs(r); }
+
+  var SUB = { "0": "₀", "1": "₁" };
+  function bits(i, n) { var s = ""; for (var k = n - 1; k >= 0; k--) s += (i >> k) & 1; return s; }
+  function subBits(i, n) { return bits(i, n).replace(/[01]/g, function (d) { return SUB[d]; }); }
+
+  // Coefficient to readable HTML: 1, −1, i, 1/√2, e^{i45°}, 0.383 ...
+  function coefHTML(c) {
+    var r = Math.hypot(c[0], c[1]), ph = Math.atan2(c[1], c[0]) * 180 / PI, neg = false;
+    var near = function (a, b) { return Math.abs(a - b) < 1e-6; };
+    if (near(Math.abs(ph), 180)) { neg = true; ph = 0; }
+    else if (near(ph, -90)) { neg = true; ph = 90; }
+    else if (ph < -90 || ph > 90) { neg = true; ph = ph > 0 ? ph - 180 : ph + 180; }
+    var mag = near(r, 1) ? "" : near(r, R2) ? "1/√2" : near(r, .5) ? "½" : r.toFixed(3);
+    var phs = near(ph, 0) ? "" : near(ph, 90) ? "i" : "e<sup>" + (ph < 0 ? "−" : "") + "i" + fmtNum(Math.abs(ph)) + "°</sup>";
+    var body;
+    if (mag === "1/√2" && phs) body = phs + "/√2";
+    else body = [mag, phs].filter(Boolean).join("·");
+    return { neg: neg, body: body };
+  }
+  function formulaHTML(L, n) {
+    if (!L.length) return "0";
+    return L.map(function (e, idx) {
+      var cp = coefHTML(e.c), term = (cp.body ? cp.body + "·" : "") + "α" + subBits(e.k, n);
+      if (idx === 0) return (cp.neg ? "−" : "") + term;
+      return (cp.neg ? " − " : " + ") + term;
+    }).join("");
+  }
+
+  return {
+    BASE: BASE, bit: bit, compile: compile, apply: apply, flows: flows, classify: classify, changed: changed,
+    initState: initState, qubitInfo: qubitInfo, norm: norm, gateName: gateName, fmtNum: fmtNum,
+    bits: bits, subBits: subBits, coefHTML: coefHTML, formulaHTML: formulaHTML, matrixOf: matrixOf
+  };
+})();
+if (typeof module !== "undefined") module.exports = Q;
+</script>
+
+<script id="ui">
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  // Every transport button exists twice (circuit panel and step panel); T() updates both.
+  function T(act) {
+    var els = document.querySelectorAll('[data-act="' + act + '"]');
+    var set = function (k) { return function (v) { els.forEach(function (el) { el[k] = v; }); }; };
+    var o = {};
+    Object.defineProperty(o, "disabled", { set: set("disabled") });
+    Object.defineProperty(o, "textContent", { set: set("textContent") });
+    Object.defineProperty(o, "onclick", { set: set("onclick") });
+    return o;
+  }
+  var BASE = Q.BASE, PI = Math.PI;
+  var reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- toolbox ----------
+  function famOfBase(b) {
+    if (b === "I") return "identity";
+    if (["Z","S","Sdg","T","Tdg","Rz","P"].indexOf(b) >= 0) return "rotator";
+    if (["X","Y","SWAP","ISWAP"].indexOf(b) >= 0) return "mover";
+    return "mixer";
+  }
+  var TEMPLATES = [
+    { group: "One qubit", items: ["I","X","Y","Z","H","S","Sdg","T","Tdg","SX","SXdg","Rx","Ry","Rz","P","U"].map(function (b) { return { label: BASE[b].label, base: b, nc: 0 }; }) },
+    { group: "Controlled", items: [
+      { label: "CNOT", base: "X", nc: 1 }, { label: "CY", base: "Y", nc: 1 }, { label: "CZ", base: "Z", nc: 1 },
+      { label: "CH", base: "H", nc: 1 }, { label: "CS", base: "S", nc: 1 }, { label: "CT", base: "T", nc: 1 },
+      { label: "CP", base: "P", nc: 1 }, { label: "CRx", base: "Rx", nc: 1 }, { label: "CRy", base: "Ry", nc: 1 },
+      { label: "CRz", base: "Rz", nc: 1 }, { label: "C√X", base: "SX", nc: 1 } ] },
+    { group: "Swaps and three-qubit gates", items: [
+      { label: "SWAP", base: "SWAP", nc: 0 }, { label: "iSWAP", base: "ISWAP", nc: 0 }, { label: "√SWAP", base: "SQSWAP", nc: 0 },
+      { label: "Toffoli", base: "X", nc: 2 }, { label: "CCZ", base: "Z", nc: 2 }, { label: "Fredkin", base: "SWAP", nc: 1 } ] }
+  ];
+
+  function G(base, t, c, p, a) {
+    return { base: base, targets: t.map(function (x) { return x - 1; }), ctrl: (c || []).map(function (x) { return x - 1; }),
+             actrl: (a || []).map(function (x) { return x - 1; }), params: p || (BASE[base].def ? BASE[base].def.slice() : []) };
+  }
+  function withProbes(list, idxs) { idxs.forEach(function (i) { list[i].probe = true; }); return list; }
+  var EXAMPLES = [
+    { name: "Bell pair", n: 2, init: { kind: "zero" }, probeStart: true, c: withProbes([G("H",[1]), G("X",[2],[1])], [0, 1]) },
+    { name: "GHZ on three qubits", n: 3, init: { kind: "zero" }, c: withProbes([G("H",[1]), G("X",[2],[1]), G("X",[3],[2])], [0, 2]) },
+    { name: "Interferometer (H, phase, H)", n: 1, init: { kind: "zero" }, probeStart: true, c: withProbes([G("H",[1]), G("P",[1],[],[180]), G("H",[1])], [0, 1, 2]) },
+    { name: "Phase kickback", n: 2, init: { kind: "zero" }, c: withProbes([G("X",[2]), G("H",[1]), G("H",[2]), G("X",[2],[1]), G("H",[1])], [2, 3, 4]) },
+    { name: "Grover search for |11⟩", n: 2, init: { kind: "zero" }, c: withProbes([G("H",[1]), G("H",[2]), G("Z",[2],[1]), G("H",[1]), G("H",[2]), G("X",[1]), G("X",[2]), G("Z",[2],[1]), G("X",[1]), G("X",[2]), G("H",[1]), G("H",[2])], [2, 11]) },
+    { name: "Toffoli as AND", n: 3, init: { kind: "basis", bits: "110" }, c: [G("X",[3],[1,2])] },
+    { name: "SWAP from three CNOTs", n: 2, init: { kind: "random", seed: 7 }, probeStart: true, c: withProbes([G("X",[2],[1]), G("X",[1],[2]), G("X",[2],[1])], [2]) },
+    { name: "Quantum Fourier transform, 3 qubits", n: 3, init: { kind: "basis", bits: "001" }, c: withProbes([G("H",[1]), G("P",[1],[2],[90]), G("P",[1],[3],[45]), G("H",[2]), G("P",[2],[3],[90]), G("H",[3]), G("SWAP",[1,3])], [6]) },
+    { name: "Bernstein–Vazirani, secret 1011", n: 5, init: { kind: "basis", bits: "00001" }, c: withProbes([G("H",[1]),G("H",[2]),G("H",[3]),G("H",[4]),G("H",[5]), G("X",[5],[1]),G("X",[5],[3]),G("X",[5],[4]), G("H",[1]),G("H",[2]),G("H",[3]),G("H",[4])], [11]) }
+  ];
+
+  // ---------- app state ----------
+  var S = {
+    n: 2, init: { kind: "zero", bits: "00", seed: 1 }, circuit: [], cursor: 0, probeStart: false,
+    view: { layout: "rows", animate: true, speed: 2400, magnify: true, showSum: true, changedOnly: false, blochAll: false }
+  };
+  var editor = { base: "H", params: [], roles: [], tOrder: [], bound: null };
+  var states = [], steps = [], hist = [], hover = null, playing = false, anim = 0, animT = null;
+  var identityOutsCache = {};
+
+  // ---------- persistence ----------
+  var KEY = "amplitude-bench-v3";
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ n: S.n, init: S.init, circuit: S.circuit, cursor: S.cursor, probeStart: S.probeStart, view: S.view })); } catch (e) {}
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY); if (!raw) return false;
+      var d = JSON.parse(raw);
+      if (!d || !(d.n >= 1 && d.n <= 5) || !Array.isArray(d.circuit)) return false;
+      var ok = d.circuit.every(function (g) { return g && BASE[g.base] && Array.isArray(g.targets); });
+      if (!ok) return false;
+      S.n = d.n; S.init = d.init || S.init; S.circuit = d.circuit; S.cursor = Math.min(d.cursor | 0, d.circuit.length);
+      S.probeStart = !!d.probeStart;
+      if (d.view) for (var k in S.view) if (k in d.view) S.view[k] = d.view[k];
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ---------- computation ----------
+  function recompute() {
+    var N = 1 << S.n;
+    states = [Q.initState(S.init, S.n)];
+    steps = [];
+    for (var i = 0; i < S.circuit.length; i++) {
+      var comp = Q.compile(S.circuit[i], S.n);
+      var outs = Q.flows(comp, N);
+      steps.push({ comp: comp, outs: outs, fam: Q.classify(outs) });
+      states.push(Q.apply(states[i], comp));
+    }
+    if (S.cursor > S.circuit.length) S.cursor = S.circuit.length;
+  }
+  function identityOuts(N) {
+    if (!identityOutsCache[N]) { var o = []; for (var i = 0; i < N; i++) o.push([{ k: i, c: [1, 0] }]); identityOutsCache[N] = o; }
+    return identityOutsCache[N];
+  }
+
+  // ---------- history ----------
+  function snapshot() { return JSON.stringify({ n: S.n, init: S.init, circuit: S.circuit, cursor: S.cursor, probeStart: S.probeStart }); }
+  function pushHist() { hist.push(snapshot()); if (hist.length > 150) hist.shift(); }
+  function undo() {
+    if (!hist.length) { toast("Nothing to undo"); return; }
+    stopAll();
+    var d = JSON.parse(hist.pop());
+    S.n = d.n; S.init = d.init; S.circuit = d.circuit; S.cursor = d.cursor; S.probeStart = !!d.probeStart;
+    editor.bound = null;
+    recompute(); save(); renderAll();
+  }
+  function mutate(fn) { stopAll(); pushHist(); fn(); recompute(); save(); }
+
+  // ---------- toast ----------
+  var toastT = 0;
+  function toast(msg) { var t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); }, 2400); }
+
+  // ---------- header ----------
+  function renderHeader() {
+    var nq = $("#nq");
+    if (!nq.childNodes.length) {
+      for (var i = 1; i <= 5; i++) {
+        var b = document.createElement("button"); b.type = "button"; b.textContent = i; b.dataset.n = i;
+        b.setAttribute("aria-label", i + (i === 1 ? " qubit" : " qubits"));
+        nq.appendChild(b);
+      }
+    }
+    nq.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.dataset.n === S.n)); });
+    $("#initKind").value = S.init.kind;
+    var bitsEl = $("#initBits");
+    bitsEl.hidden = S.init.kind !== "basis";
+    bitsEl.value = S.init.bits || "0".repeat(S.n);
+    bitsEl.maxLength = S.n;
+    bitsEl.placeholder = "0".repeat(S.n);
+    $("#reroll").hidden = S.init.kind !== "random";
+  }
+
+  function setN(n) {
+    if (n === S.n) return;
+    var dropped = 0;
+    mutate(function () {
+      var kept = S.circuit.filter(function (g) {
+        return g.targets.concat(g.ctrl || [], g.actrl || []).every(function (q) { return q < n; });
+      });
+      dropped = S.circuit.length - kept.length;
+      S.circuit = kept; S.n = n;
+      var b = (S.init.bits || "").replace(/[^01]/g, "");
+      S.init.bits = b.length >= n ? b.slice(b.length - n) : "0".repeat(n - b.length) + b;
+      S.cursor = Math.min(S.cursor, S.circuit.length);
+    });
+    editor.bound = null;
+    renderAll();
+    if (dropped) toast("Removed " + dropped + (dropped === 1 ? " gate that used" : " gates that used") + " a qubit beyond q" + n);
+  }
+
+  // ---------- Bloch sphere drawing (SVG markup) ----------
+  var VA = 25 * PI / 180, VE = 18 * PI / 180;
+  var RX = [-Math.sin(VA), Math.cos(VA), 0];
+  var UP = [-Math.sin(VE) * Math.cos(VA), -Math.sin(VE) * Math.sin(VA), Math.cos(VE)];
+  function proj(x, y, z) { return [x * RX[0] + y * RX[1] + z * RX[2], x * UP[0] + y * UP[1] + z * UP[2]]; }
+  var EQ = (function () { var pts = []; for (var i = 0; i <= 32; i++) { var a = 2 * PI * i / 32; pts.push(proj(Math.cos(a), Math.sin(a), 0)); } return pts; })();
+  function blochMarkup(cx, cy, R, b, title) {
+    var eq = EQ.map(function (p, i) { return (i ? "L" : "M") + (cx + R * p[0]).toFixed(1) + " " + (cy - R * p[1]).toFixed(1); }).join("");
+    var top = proj(0, 0, 1), xa = proj(1, 0, 0), v = proj(b.x, b.y, b.z);
+    var ex = cx + R * v[0], ey = cy - R * v[1], ent = b.r < 1 - 1e-6;
+    var col = ent ? "var(--mixer)" : "var(--bloch)";
+    var s = '<g>' + (title ? "<title>" + title + "</title>" : "") +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="var(--panel)" stroke="var(--rule-strong)" stroke-width="1"/>' +
+      '<path d="' + eq + '" fill="none" stroke="var(--rule-strong)" stroke-width=".8"/>' +
+      '<line x1="' + cx + '" y1="' + (cy - R * top[1]).toFixed(1) + '" x2="' + cx + '" y2="' + (cy + R * top[1]).toFixed(1) + '" stroke="var(--rule)" stroke-width=".8"/>' +
+      '<line x1="' + (cx - R * xa[0]).toFixed(1) + '" y1="' + (cy + R * xa[1]).toFixed(1) + '" x2="' + (cx + R * xa[0]).toFixed(1) + '" y2="' + (cy - R * xa[1]).toFixed(1) + '" stroke="var(--rule)" stroke-width=".8"/>';
+    if (b.r > 0.03) s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + ex.toFixed(1) + '" y2="' + ey.toFixed(1) + '" stroke="' + col + '" stroke-width="1.8" stroke-linecap="round"/>';
+    s += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="' + (R > 14 ? 2.8 : 2.2) + '" fill="' + col + '"/></g>';
+    return s;
+  }
+  function blochTitle(q, b, where) {
+    return "q" + (q + 1) + " " + where + ": x " + b.x.toFixed(2) + ", y " + b.y.toFixed(2) + ", z " + b.z.toFixed(2) +
+      (b.r < 1 - 1e-6 ? " (entangled, length " + b.r.toFixed(2) + ")" : "");
+  }
+
+  // ---------- palette ----------
+  function renderPalette() {
+    var html = TEMPLATES.map(function (grp, gi) {
+      return '<div class="tb-group"><h3>' + grp.group + '</h3><div class="chips">' + grp.items.map(function (it, ii) {
+        var need = it.nc + BASE[it.base].kind, dis = need > S.n;
+        return '<button type="button" class="chip f-' + famOfBase(it.base) + (it.label.length > 4 ? " wide" : "") + '" data-g="' + gi + '" data-i="' + ii + '"' +
+          (dis ? ' disabled title="Needs ' + need + ' qubits"' : ' title="Drag onto a wire: ' + BASE[it.base].name + (it.nc ? " with " + it.nc + " control" + (it.nc > 1 ? "s" : "") : "") + '"') +
+          '>' + it.label + '</button>';
+      }).join("") + '</div></div>';
+    }).join("");
+    html += '<div class="tb-group"><h3>Inspect</h3><div class="chips"><button type="button" class="chip probe full" data-probe="1" title="Drag between gates to show each qubit on a Bloch sphere">' +
+      '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">' + blochMarkup(9, 9, 7.5, { x: .5, y: .5, z: .7, r: 1 }) + '</svg>Bloch probe</button></div></div>';
+    $("#palette").innerHTML = html;
+  }
+
+  // Where a dropped template lands: target on the hovered wire, controls on the nearest free wires (above first).
+  function placement(it, q, n) {
+    var kind = BASE[it.base].kind, need = kind + it.nc;
+    if (need > n) return null;
+    var targets = [q];
+    if (kind === 2) targets.push(q + 1 < n ? q + 1 : q - 1);
+    var used = targets.slice(), ctrl = [], order = [];
+    for (var d = 1; d < n; d++) { if (q - d >= 0) order.push(q - d); if (q + d < n) order.push(q + d); }
+    for (var j = 0; j < order.length && ctrl.length < it.nc; j++) if (used.indexOf(order[j]) < 0) { ctrl.push(order[j]); used.push(order[j]); }
+    if (kind === 2) targets.sort(function (a, b) { return a - b; });
+    return { base: it.base, targets: targets, ctrl: ctrl.sort(function (a, b) { return a - b; }), actrl: [],
+             params: BASE[it.base].def ? BASE[it.base].def.slice() : [] };
+  }
+
+  // ---------- editor (selected gate) ----------
+  function editorGate() {
+    var g = { base: editor.base, params: editor.params.slice(), targets: [], ctrl: [], actrl: [] };
+    editor.roles.forEach(function (r, q) {
+      if (r === "t") g.targets.push(q); else if (r === "c") g.ctrl.push(q); else if (r === "a") g.actrl.push(q);
+    });
+    var src = editor.bound !== null ? S.circuit[editor.bound] : null;
+    if (src && src.probe) g.probe = true;
+    return g;
+  }
+  function editorValid() {
+    var kind = BASE[editor.base].kind;
+    return editor.roles.filter(function (r) { return r === "t"; }).length === kind;
+  }
+  function setRole(q, role) {
+    var kind = BASE[editor.base].kind, roles = editor.roles;
+    if (role === "t") {
+      if (roles[q] === "t") return;
+      if (kind === 1) { roles.forEach(function (r, i) { if (r === "t") roles[i] = ""; }); editor.tOrder = [q]; }
+      else {
+        editor.tOrder = editor.tOrder.filter(function (i) { return roles[i] === "t"; });
+        if (editor.tOrder.length >= 2) roles[editor.tOrder.shift()] = "";
+        editor.tOrder.push(q);
+      }
+      roles[q] = "t";
+    } else {
+      roles[q] = role;
+      editor.tOrder = editor.tOrder.filter(function (i) { return roles[i] === "t"; });
+    }
+    liveApply(true);
+    renderEditor();
+  }
+  function liveApply(withHistory) {
+    if (editor.bound === null || !editorValid()) return;
+    var idx = editor.bound;
+    if (idx >= S.circuit.length) { editor.bound = null; return; }
+    if (withHistory) pushHist();
+    S.circuit[idx] = editorGate();
+    recompute(); save();
+    renderCircuit(); renderInfo(); draw(null);
+  }
+  function renderEditor() {
+    var ed = $("#editor");
+    if (editor.bound === null || editor.bound >= S.circuit.length) {
+      editor.bound = null;
+      ed.innerHTML = '<h2>Selected gate</h2><p class="hint lead">Nothing selected.</p>' +
+        '<p class="hint">Drag a gate from the toolbox onto a wire to place it. Click a placed gate to change its qubits, controls and angles here.</p>' +
+        '<p class="hint">Keyboard: focus a toolbox gate and press Enter to add it on q1 after the current step.</p>';
+      return;
+    }
+    var d = BASE[editor.base], kind = d.kind, valid = editorValid();
+    var html = '<div class="ed-head"><h2>Selected gate</h2><span class="ed-mode">step ' + (editor.bound + 1) + ', edits apply live</span></div>' +
+      '<div class="ed-name">' + (valid ? Q.gateName(editorGate()) : d.label) + '</div>';
+    html += '<div class="roles" role="group" aria-label="Qubit roles">';
+    for (var q = 0; q < S.n; q++) {
+      var r = editor.roles[q] || "";
+      html += '<div class="role-row"><span class="q">q' + (q + 1) + '</span><div class="role-seg">' +
+        roleBtn(q, "", "none", r) + roleBtn(q, "c", "● on 1", r) + roleBtn(q, "a", "○ on 0", r) +
+        roleBtn(q, "t", kind === 2 ? "swap" : "target", r) + '</div></div>';
+    }
+    html += '</div>';
+    html += valid ? '<p class="hint">● acts when that qubit is 1, ○ when it is 0. Any gate can take any number of controls.</p>'
+                  : '<p class="hint warn">Choose ' + (kind === 2 ? "two qubits to swap" : "one target qubit") + '.</p>';
+    if (d.params.length) {
+      html += '<div class="params">';
+      d.params.forEach(function (pn, i) {
+        var v = editor.params[i];
+        html += '<div class="param"><span>' + pn + '</span><input type="range" min="-360" max="360" step="1" value="' + v + '" data-p="' + i + '" aria-label="' + pn + ' in degrees">' +
+          '<input type="number" step="any" value="' + v + '" data-pn="' + i + '" aria-label="' + pn + ' value in degrees"></div>';
+      });
+      html += '</div>';
+    }
+    var hasProbe = !!S.circuit[editor.bound].probe;
+    html += '<div class="ed-actions">' +
+      '<button class="btn" type="button" id="eDup"' + (valid ? "" : " disabled") + '>Add a copy after</button>' +
+      '<button class="btn" type="button" id="eProbe">' + (hasProbe ? "Remove Bloch probe" : "Add Bloch probe after") + '</button>' +
+      '<button class="btn danger" type="button" id="eDel">Delete</button>' +
+      '<button class="btn" type="button" id="eNew">Deselect</button></div>';
+    ed.innerHTML = html;
+  }
+  function roleBtn(q, role, text, cur) {
+    return '<button type="button" data-q="' + q + '" data-role="' + role + '" aria-pressed="' + (cur === role) + '">' + text + '</button>';
+  }
+  function bindEditor(idx) {
+    var g = S.circuit[idx];
+    editor.bound = idx; editor.base = g.base; editor.params = (g.params || []).slice();
+    editor.roles = new Array(S.n).fill("");
+    g.targets.forEach(function (q) { editor.roles[q] = "t"; });
+    (g.ctrl || []).forEach(function (q) { editor.roles[q] = "c"; });
+    (g.actrl || []).forEach(function (q) { editor.roles[q] = "a"; });
+    editor.tOrder = g.targets.slice();
+  }
+  function selectStep(idx, animate) {
+    stopAll();
+    S.cursor = idx + 1;
+    bindEditor(idx);
+    save(); renderAll();
+    if (animate) animateStep();
+  }
+  function insertGate(g, at) {
+    mutate(function () { S.circuit.splice(at, 0, g); S.cursor = at + 1; });
+    bindEditor(at);
+    renderAll(); animateStep();
+  }
+  function deleteStep(idx, quiet) {
+    if (idx < 0 || idx >= S.circuit.length) return;
+    var name = Q.gateName(S.circuit[idx]);
+    mutate(function () { S.circuit.splice(idx, 1); S.cursor = Math.min(idx, S.circuit.length); });
+    editor.bound = null;
+    renderAll();
+    if (!quiet) toast("Deleted " + name + ". Undo brings it back.");
+  }
+
+  // ---------- circuit diagram ----------
+  var CW = 50, PW = 44, RH = 40, X0 = 78, TOP = 22, CG = null;
+  function famVar(f) { return f === "mixer" ? "var(--mixer)" : f === "rotator" ? "var(--rotator)" : f === "identity" ? "var(--identity)" : "var(--mover)"; }
+  function wy(q) { return TOP + RH * (q + 0.5); }
+  function probeAt(i) { return S.view.blochAll || (i < 0 ? S.probeStart : !!S.circuit[i].probe); }
+
+  function gateMarkup(g, cx, fc) {
+    var o = [], nc = (g.ctrl || []).length + (g.actrl || []).length;
+    var all = g.targets.concat(g.ctrl || [], g.actrl || []);
+    if (all.length > 1) {
+      var ys = all.map(wy);
+      o.push('<line x1="' + cx + '" y1="' + Math.min.apply(null, ys) + '" x2="' + cx + '" y2="' + Math.max.apply(null, ys) + '" stroke="var(--ink)" stroke-width="1.4"/>');
+    }
+    (g.ctrl || []).forEach(function (q) { o.push('<circle cx="' + cx + '" cy="' + wy(q) + '" r="4.8" fill="var(--ink)"/>'); });
+    (g.actrl || []).forEach(function (q) { o.push('<circle cx="' + cx + '" cy="' + wy(q) + '" r="4.8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>'); });
+    var kind = BASE[g.base].kind, lab = BASE[g.base].label;
+    if (kind === 1) {
+      var ty = wy(g.targets[0]);
+      if (g.base === "X" && nc > 0) {
+        o.push('<circle cx="' + cx + '" cy="' + ty + '" r="10.5" fill="var(--panel)" stroke="' + fc + '" stroke-width="1.7"/>' +
+               '<line x1="' + (cx - 10.5) + '" y1="' + ty + '" x2="' + (cx + 10.5) + '" y2="' + ty + '" stroke="' + fc + '" stroke-width="1.7"/>' +
+               '<line x1="' + cx + '" y1="' + (ty - 10.5) + '" x2="' + cx + '" y2="' + (ty + 10.5) + '" stroke="' + fc + '" stroke-width="1.7"/>');
+      } else if (g.base === "Z" && nc > 0) {
+        o.push('<circle cx="' + cx + '" cy="' + ty + '" r="4.8" fill="var(--ink)"/>');
+      } else {
+        var bw = lab.length > 2 ? 42 : 32;
+        o.push('<rect x="' + (cx - bw / 2) + '" y="' + (ty - 13) + '" width="' + bw + '" height="26" rx="5" fill="var(--panel)" stroke="' + fc + '" stroke-width="1.7"/>' +
+               '<text x="' + cx + '" y="' + (ty + 4.5) + '" text-anchor="middle" font-size="12.5" fill="var(--ink)">' + lab + '</text>');
+        if (BASE[g.base].params.length === 1) o.push('<text x="' + cx + '" y="' + (ty + 22) + '" text-anchor="middle" font-size="9" fill="var(--faint)">' + Q.fmtNum(g.params[0]) + '°</text>');
+      }
+    } else {
+      g.targets.forEach(function (q) {
+        var y = wy(q);
+        if (g.base === "SWAP") {
+          o.push('<path d="M' + (cx - 6.5) + ' ' + (y - 6.5) + 'L' + (cx + 6.5) + ' ' + (y + 6.5) + 'M' + (cx + 6.5) + ' ' + (y - 6.5) + 'L' + (cx - 6.5) + ' ' + (y + 6.5) + '" stroke="' + fc + '" stroke-width="2.2" fill="none"/>');
+        } else {
+          o.push('<rect x="' + (cx - 21) + '" y="' + (y - 13) + '" width="42" height="26" rx="5" fill="var(--panel)" stroke="' + fc + '" stroke-width="1.7"/>' +
+                 '<text x="' + cx + '" y="' + (y + 4) + '" text-anchor="middle" font-size="10.5" fill="var(--ink)">' + (g.base === "ISWAP" ? "iSW" : "√SW") + '</text>');
+        }
+      });
+    }
+    return o.join("");
+  }
+
+  function renderCircuit() {
+    var n = S.n, L = S.circuit.length, o = [], cols = [], bounds = [];
+    var x = X0;
+    if (probeAt(-1)) { cols.push({ type: "probe", at: -1, x0: x, x1: x + PW }); x += PW; }
+    bounds.push(x);
+    for (var i = 0; i < L; i++) {
+      cols.push({ type: "gate", i: i, x0: x, x1: x + CW }); x += CW;
+      if (probeAt(i)) { cols.push({ type: "probe", at: i, x0: x, x1: x + PW }); x += PW; }
+      bounds.push(x);
+    }
+    var W = Math.max(x + 110, 420), H = TOP + n * RH + 8;
+    CG = { cols: cols, bounds: bounds, W: W, H: H };
+    var svg = $("#circ");
+    svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var ov = $("#circOver");
+    ov.setAttribute("width", W); ov.setAttribute("height", H); ov.setAttribute("viewBox", "0 0 " + W + " " + H);
+
+    // start column
+    o.push('<g class="col" data-type="start"><rect x="36" y="2" width="36" height="' + (H - 4) + '" rx="6" fill="' + (S.cursor === 0 ? "var(--sel)" : "transparent") + '"/>' +
+           '<text x="54" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">ψ₀</text>');
+    for (var q = 0; q < n; q++) {
+      var initLabel = S.init.kind === "basis" ? ((S.init.bits || "")[q] || "0") : S.init.kind === "zero" ? "0" : S.init.kind === "plus" ? "+" : "~";
+      o.push('<text x="54" y="' + (wy(q) + 4) + '" text-anchor="middle" font-size="11.5" fill="var(--muted)">' + (initLabel === "~" ? "∼" : "|" + initLabel + "⟩") + '</text>');
+    }
+    o.push('</g>');
+    for (q = 0; q < n; q++) {
+      o.push('<text x="6" y="' + (wy(q) + 4) + '" font-size="12.5" fill="var(--muted)">q' + (q + 1) + '</text>');
+      o.push('<line x1="72" y1="' + wy(q) + '" x2="' + (W - 8) + '" y2="' + wy(q) + '" stroke="var(--rule-strong)" stroke-width="1.2"/>');
+    }
+    var step = 0;
+    cols.forEach(function (c) {
+      if (c.type === "gate") {
+        var g = S.circuit[c.i], cx = (c.x0 + c.x1) / 2, fam = steps[c.i] ? steps[c.i].fam : "mover";
+        var dim = c.i >= S.cursor, sel = c.i === S.cursor - 1;
+        o.push('<g class="col drag" data-type="gate" data-i="' + c.i + '"' + (dim ? ' opacity=".42"' : "") + '><title>Step ' + (c.i + 1) + ": " + Q.gateName(g) + " (" + fam + "). Drag to move, drag off to delete.</title>");
+        o.push('<rect x="' + (c.x0 + 2) + '" y="2" width="' + (CW - 4) + '" height="' + (H - 4) + '" rx="6" fill="' + (sel ? "var(--sel)" : "transparent") + '"' + (sel && editor.bound === c.i ? ' stroke="var(--accent)" stroke-width="1"' : "") + '/>');
+        o.push('<text x="' + cx + '" y="14" text-anchor="middle" font-size="10.5" fill="var(--faint)">' + (c.i + 1) + '</text>');
+        o.push(gateMarkup(g, cx, famVar(fam)));
+        o.push('</g>');
+      } else {
+        var si = c.at + 1, st = states[si];
+        if (!st) return;
+        var info = Q.qubitInfo(st, n), pcx = (c.x0 + c.x1) / 2, explicit = !S.view.blochAll;
+        o.push('<g class="col' + (explicit ? " drag" : "") + '" data-type="probe" data-at="' + c.at + '"' + (si > S.cursor ? ' opacity=".5"' : "") + '>');
+        o.push('<title>Bloch spheres for ψ' + subNum(si) + (explicit ? ". Drag to move, drag off to remove." : "") + '</title>');
+        o.push('<rect x="' + (c.x0 + 3) + '" y="4" width="' + (PW - 6) + '" height="' + (H - 8) + '" rx="8" fill="var(--soft)" opacity=".7"/>');
+        info.forEach(function (b, qq) { o.push(blochMarkup(pcx, wy(qq), 14, b, blochTitle(qq, b, "in ψ" + subNum(si)))); });
+        o.push('</g>');
+      }
+    });
+    svg.innerHTML = o.join("");
+    ov.innerHTML = "";
+
+    document.querySelectorAll(".stepinfo").forEach(function (el) { el.textContent = S.cursor + " / " + L; });
+    T("prev").disabled = S.cursor === 0; T("first").disabled = S.cursor === 0;
+    T("next").disabled = S.cursor >= L; T("last").disabled = S.cursor >= L;
+    T("replay").disabled = S.cursor === 0;
+    T("play").disabled = L === 0;
+    T("play").textContent = playing ? "Pause" : "Play";
+    T("undo").disabled = hist.length === 0;
+    T("clear").disabled = L === 0 && !S.probeStart;
+    $("#circHint").textContent = L ? "Drag a placed gate to move it, or drag it off the circuit to delete it. Click a gate to select and edit it."
+                                   : "Drop a gate from the toolbox onto one of the wires to start.";
+    $("#stageTitle").textContent = S.cursor > 0 ? "Step " + S.cursor + ": what " + Q.gateName(S.circuit[S.cursor - 1]) + " does to the statevector" : "Statevector at the start";
+    $("#optBlochAll").checked = S.view.blochAll;
+    if (!drag) {
+      var sc = $("#circScroll"), cur = null;
+      for (var j = 0; j < cols.length; j++) if (cols[j].type === "gate" && cols[j].i === S.cursor - 1) cur = cols[j];
+      if (cur && (cur.x0 < sc.scrollLeft || cur.x1 > sc.scrollLeft + sc.clientWidth)) sc.scrollLeft = Math.max(0, cur.x0 - sc.clientWidth / 2);
+    }
+  }
+
+  // ---------- drag and drop ----------
+  var drag = null;
+  function beginPointer(ev, info) {
+    if (ev.button !== undefined && ev.button !== 0) return;
+    drag = info; drag.pid = ev.pointerId; drag.x0 = ev.clientX; drag.y0 = ev.clientY; drag.started = false;
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+  }
+  function endListeners() {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+  }
+  function onMove(ev) {
+    if (!drag || ev.pointerId !== drag.pid) return;
+    if (!drag.started) {
+      if (drag.kind === "probe-fixed") return;
+      if (Math.hypot(ev.clientX - drag.x0, ev.clientY - drag.y0) < 6) return;
+      drag.started = true; stopAll();
+      var gh = document.createElement("div"); gh.className = "ghost"; gh.textContent = drag.label;
+      document.body.appendChild(gh); drag.ghost = gh;
+      document.body.classList.add("dragging");
+    }
+    ev.preventDefault();
+    drag.ghost.style.left = ev.clientX + "px"; drag.ghost.style.top = ev.clientY + "px";
+    autoscroll(ev);
+    drag.target = computeDrop(ev);
+    showDrop();
+  }
+  function onUp(ev) {
+    if (!drag || ev.pointerId !== drag.pid) return;
+    endListeners();
+    var d = drag;
+    if (!d.started) { drag = null; handleTap(d); return; }
+    if (d.ghost) d.ghost.remove();
+    document.body.classList.remove("dragging");
+    $("#circOver").innerHTML = "";
+    drag = null;
+    performDrop(d);
+  }
+  function onCancel() {
+    if (!drag) return;
+    endListeners();
+    if (drag.ghost) drag.ghost.remove();
+    document.body.classList.remove("dragging");
+    $("#circOver").innerHTML = "";
+    drag = null;
+  }
+  function autoscroll(ev) {
+    if (ev.clientY < 50) window.scrollBy(0, -14);
+    else if (ev.clientY > window.innerHeight - 50) window.scrollBy(0, 14);
+    var sc = $("#circScroll"), r = sc.getBoundingClientRect();
+    if (ev.clientY < r.top - 40 || ev.clientY > r.bottom + 40) return;
+    if (ev.clientX > r.right - 48) sc.scrollLeft += 14;
+    else if (ev.clientX < r.left + 48) sc.scrollLeft -= 14;
+  }
+  function computeDrop(ev) {
+    var svg = $("#circ"), r = svg.getBoundingClientRect(), sr = $("#circScroll").getBoundingClientRect();
+    var sx = ev.clientX - r.left, sy = ev.clientY - r.top;
+    var inside = ev.clientX >= sr.left - 8 && ev.clientX <= sr.right + 8 && sy >= -30 && sy <= r.height + 30;
+    if (!inside) return { outside: true };
+    var k = 0, best = Infinity;
+    CG.bounds.forEach(function (bx, idx) { var dd = Math.abs(bx - sx); if (dd < best) { best = dd; k = idx; } });
+    var q = Math.max(0, Math.min(S.n - 1, Math.floor((sy - TOP) / RH)));
+    var t = { k: k, q: q, outside: false };
+    if (drag.kind === "new") t.gate = placement(drag.item, q, S.n);
+    else if (drag.kind === "move") {
+      var g = S.circuit[drag.i], dq = q - drag.row;
+      var qs = g.targets.concat(g.ctrl || [], g.actrl || []);
+      if (!qs.every(function (x) { return x + dq >= 0 && x + dq < S.n; })) dq = 0;
+      var sh = function (x) { return x + dq; };
+      t.gate = { base: g.base, params: (g.params || []).slice(), targets: g.targets.map(sh), ctrl: (g.ctrl || []).map(sh), actrl: (g.actrl || []).map(sh), probe: g.probe };
+    }
+    return t;
+  }
+  function showDrop() {
+    var ov = $("#circOver"), t = drag.target, gh = drag.ghost;
+    if (!t || t.outside) {
+      ov.innerHTML = "";
+      if (drag.kind === "move" || drag.kind === "probe-move") { gh.classList.add("del"); gh.textContent = drag.kind === "move" ? "Release to delete" : "Release to remove"; }
+      else { gh.classList.remove("del"); gh.textContent = drag.label; }
+      return;
+    }
+    gh.classList.remove("del"); gh.textContent = drag.label;
+    var bx = CG.bounds[t.k], s = '<line x1="' + bx + '" y1="4" x2="' + bx + '" y2="' + (CG.H - 4) + '" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3"/>';
+    if (drag.kind === "new" || drag.kind === "move") {
+      if (t.gate) s += '<g opacity=".9">' + gateMarkup(t.gate, bx, "var(--accent)") + '</g>';
+      else s += '<text x="' + (bx + 6) + '" y="' + (wy(t.q) - 14) + '" font-size="11.5" fill="var(--danger)" font-family="var(--sans)">needs more qubits</text>';
+    } else {
+      var st = states[t.k];
+      if (st) Q.qubitInfo(st, S.n).forEach(function (b, qq) { s += '<g opacity=".85">' + blochMarkup(bx, wy(qq), 13, b) + '</g>'; });
+    }
+    ov.innerHTML = s;
+  }
+  function performDrop(d) {
+    var t = d.target;
+    if (d.kind === "new") {
+      if (!t || t.outside) return;
+      if (!t.gate) { toast(d.label + " needs " + (BASE[d.item.base].kind + d.item.nc) + " qubits"); return; }
+      insertGate(t.gate, t.k);
+    } else if (d.kind === "move") {
+      if (!t || t.outside) { deleteStep(d.i); return; }
+      var to = t.k > d.i ? t.k - 1 : t.k;
+      mutate(function () { S.circuit.splice(d.i, 1); S.circuit.splice(to, 0, t.gate); S.cursor = to + 1; });
+      bindEditor(to);
+      renderAll(); animateStep();
+    } else if (d.kind === "probe-new" || d.kind === "probe-move") {
+      if (S.view.blochAll) { toast("Bloch spheres are already shown after every gate"); return; }
+      var from = d.kind === "probe-move" ? d.at : null;
+      if (!t || t.outside) {
+        if (from === null) return;
+        mutate(function () { setProbe(from, false); });
+        renderAll(); toast("Removed the Bloch probe"); return;
+      }
+      var at = t.k - 1;
+      mutate(function () { if (from !== null) setProbe(from, false); setProbe(at, true); });
+      renderAll();
+    }
+  }
+  function setProbe(at, on) {
+    if (at < 0) S.probeStart = on;
+    else if (S.circuit[at]) { if (on) S.circuit[at].probe = true; else delete S.circuit[at].probe; }
+  }
+  function handleTap(d) {
+    if (d.kind === "new" || d.kind === "probe-new") { toast("Drag " + (d.kind === "new" ? d.label : "the Bloch probe") + " onto the circuit"); return; }
+    if (d.kind === "move") { selectStep(d.i, true); return; }
+    if (d.kind === "probe-move" || d.kind === "probe-fixed") { go(d.at + 1, false); return; }
+  }
+
+  // ---------- right panel ----------
+  var FAM_TEXT = {
+    "mover": "Moves amplitudes between slots. Nothing is added together and no phase changes: it only relocates.",
+    "mover + phase": "Moves amplitudes between slots and rotates them as they move. Still no adding, so no interference.",
+    "rotator": "Every amplitude stays in its own slot. Some of them are rotated by a phase, so lengths and probabilities do not change.",
+    "mixer": "Each new amplitude is a weighted sum of two old ones. This is where interference happens: arrows that line up grow, opposing ones cancel.",
+    "identity": "Changes nothing you could ever measure. At most it multiplies the whole state by one global phase."
+  };
+  function renderInfo() {
+    var k = S.cursor, n = S.n, N = 1 << n, gc = $("#gateCard"), qt = $("#qruth");
+    if (k === 0) {
+      gc.innerHTML = '<div class="gc-step">Start</div><div class="gc-title"><span class="gc-name">ψ₀</span></div>' +
+        '<p class="gc-desc">' + (S.circuit.length ? "This is the starting state. Press ▶ to apply step 1." : "This is the starting state. Drop a gate on the circuit to see how it changes.") + '</p>';
+      qt.innerHTML = '<h2>Amplitude table</h2><p class="note">Select a step to see where every new amplitude comes from.</p>';
+    } else {
+      var g = S.circuit[k - 1], st = steps[k - 1], fam = st.fam, famKey = fam === "mover + phase" ? "mover" : fam;
+      var pairs = st.comp.pairs.length / 2, kind = BASE[g.base].kind, where = [];
+      if ((g.ctrl || []).length) where.push("control" + (g.ctrl.length > 1 ? "s " : " ") + g.ctrl.map(qn).join(", "));
+      if ((g.actrl || []).length) where.push("control on 0: " + g.actrl.map(qn).join(", "));
+      where.push((kind === 2 ? "swaps " : "target ") + g.targets.map(qn).join(kind === 2 ? " and " : ", "));
+      var touched = 0; for (var o = 0; o < N; o++) if (Q.changed(st.outs, o)) touched++;
+      var M = Q.matrixOf(g);
+      var cell = function (c) { if (Math.hypot(c[0], c[1]) < 1e-12) return "0"; var h = Q.coefHTML(c); return (h.neg ? "−" : "") + (h.body || "1"); };
+      gc.innerHTML = '<div class="gc-step">Step ' + k + ' of ' + S.circuit.length + '</div>' +
+        '<div class="gc-title"><span class="gc-name">' + Q.gateName(g) + '</span><span class="badge f-' + famKey + '">' + fam + '</span></div>' +
+        '<p class="gc-where">' + where.join("; ") + '</p>' +
+        '<p class="gc-desc">' + FAM_TEXT[fam] + '</p>' +
+        '<p class="note">Acts on ' + pairs + ' pair' + (pairs === 1 ? "" : "s") + ' of slots; ' + touched + ' of ' + N + ' slots change, ' + (N - touched) + ' are untouched.</p>' +
+        '<div class="mat"><table><tr><td>' + cell(M[0]) + '</td><td>' + cell(M[1]) + '</td></tr><tr><td>' + cell(M[2]) + '</td><td>' + cell(M[3]) + '</td></tr></table>' +
+        '<span class="cap">' + (kind === 2 ? "on each pair (…0…1…, …1…0…) of the swapped qubits" : "on each pair (target 0, target 1)") +
+        ((g.ctrl || []).length + (g.actrl || []).length ? ", only where the controls are satisfied" : "") + '</span></div>';
+      var rows = [];
+      for (var o2 = 0; o2 < N; o2++) {
+        var ch = Q.changed(st.outs, o2);
+        if (S.view.changedOnly && !ch) continue;
+        rows.push('<tr class="' + (ch ? "" : "same") + '"><td>|' + Q.bits(o2, n) + '⟩</td><td>' + Q.formulaHTML(st.outs[o2], n) + '</td></tr>');
+      }
+      qt.innerHTML = '<div class="qt-head"><h2>Amplitude table</h2><label><input type="checkbox" id="optChanged"' + (S.view.changedOnly ? " checked" : "") + '> Only changed rows</label></div>' +
+        '<p class="note">New amplitude in each slot, written in terms of the amplitudes before this step.</p>' +
+        '<div class="qt-wrap"><table class="qt"><thead><tr><th>Slot</th><th>New amplitude</th></tr></thead><tbody>' + rows.join("") + '</tbody></table></div>';
+    }
+    var info = Q.qubitInfo(states[k], n), qh = '<h2>Qubits in ψ' + subNum(k) + '</h2><div class="qb">';
+    info.forEach(function (b, q) {
+      var ent = b.r < 1 - 1e-6;
+      qh += '<span class="q">q' + (q + 1) + '</span><svg width="30" height="30" viewBox="0 0 30 30">' + blochMarkup(15, 15, 13.5, b, blochTitle(q, b, "in ψ" + subNum(k))) + '</svg>' +
+        '<span class="meta">P(1) ' + b.p1.toFixed(3) + ', ' + (ent ? '<span class="ent">entangled, |r| ' + b.r.toFixed(2) + '</span>' : "independent") +
+        '<span class="bar"><i style="width:' + (b.p1 * 100).toFixed(2) + '%"></i></span></span>';
+    });
+    qh += '</div><p class="note">The arrow is the qubit on its own Bloch sphere. When a qubit is entangled with others its arrow shortens toward the centre; a fully entangled qubit is just a dot in the middle.</p>';
+    $("#qubits").innerHTML = qh;
+  }
+  function qn(q) { return "q" + (q + 1); }
+  function subNum(k) { return String(k).replace(/\d/g, function (d) { return "₀₁₂₃₄₅₆₇₈₉"[d]; }); }
+
+  // ---------- canvas ----------
+  var cv = $("#stage"), ctx = cv.getContext("2d"), Gm = null, COL = {}, HUE = [];
+  function readColors() {
+    var cs = getComputedStyle(document.documentElement), g = function (v) { return cs.getPropertyValue(v).trim(); };
+    COL = { ink: g("--ink"), muted: g("--muted"), faint: g("--faint"), rule: g("--rule"), ruleS: g("--rule-strong"), panel: g("--panel"), soft: g("--soft"),
+            mover: g("--mover"), rotator: g("--rotator"), mixer: g("--mixer"), identity: g("--identity"), mono: g("--mono"), sans: g("--sans") };
+    var L = g("--phase-l") || "40%", Sx = g("--phase-s") || "74%";
+    HUE = []; for (var h = 0; h < 360; h++) HUE.push("hsl(" + h + " " + Sx + " " + L + ")");
+    drawWheel();
+  }
+  function phaseColor(re, im) { var d = Math.round(Math.atan2(im, re) * 180 / PI); d = ((d % 360) + 360) % 360; return HUE[d]; }
+  function famColor(f) { return f === "mixer" ? COL.mixer : f === "rotator" ? COL.rotator : f === "identity" ? COL.identity : COL.mover; }
+  function drawWheel() {
+    var w = $("#wheel"), c = w.getContext("2d"), R = 20;
+    c.clearRect(0, 0, 44, 44);
+    for (var d = 0; d < 360; d += 3) {
+      c.beginPath(); c.moveTo(22, 22); c.arc(22, 22, R, -(d + 4) * PI / 180, -d * PI / 180); c.closePath();
+      c.fillStyle = HUE[d] || "#888"; c.fill();
+    }
+    c.beginPath(); c.arc(22, 22, 8, 0, 2 * PI); c.fillStyle = COL.panel; c.fill();
+  }
+  function layout() {
+    var wrap = $("#stageWrap"), W = Math.max(280, wrap.clientWidth - 12), n = S.n, N = 1 << n, mode = S.view.layout;
+    if (mode === "auto") mode = (W / N >= 58 && n <= 4) ? "cols" : "rows";
+    var g = { W: W, N: N, mode: mode };
+    if (mode === "rows") {
+      var rowH = [0, 76, 64, 52, 38, 28][n];
+      g.rowH = rowH; g.r = Math.min(rowH / 2 - 3, 28); g.top = 40; g.H = g.top + N * rowH + 10;
+      g.labelW = 10 + n * 8.2 + 16; g.right = W < 560 ? 66 : 170;
+      g.bx = g.labelW + 8 + g.r; g.ax = W - g.right - 10 - g.r;
+      g.pos = function (side, i) { return { x: side === "b" ? g.bx : g.ax, y: g.top + rowH * (i + 0.5) }; };
+    } else {
+      var colW = (W - 16) / N; g.colW = colW; g.r = Math.min(colW / 2 - 5, 32);
+      g.top = 46; g.by = g.top + g.r; var flowH = Math.max(120, Math.min(220, N * 18));
+      g.ay = g.by + g.r + flowH + g.r; g.H = g.ay + g.r + 62;
+      g.pos = function (side, i) { return { x: 8 + colW * (i + 0.5), y: side === "b" ? g.by : g.ay }; };
+    }
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = g.H + "px"; cv.style.width = W + "px";
+    cv.width = Math.round(W * dpr); cv.height = Math.round(g.H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    Gm = g;
+  }
+  function pathOf(k, o) {
+    var a = Gm.pos("b", k), b = Gm.pos("a", o), r = Gm.r + 4;
+    if (Gm.mode === "rows") { var x0 = a.x + r, x3 = b.x - r, m = (x0 + x3) / 2; return [x0, a.y, m, a.y, m, b.y, x3, b.y]; }
+    var y0 = a.y + r, y3 = b.y - r, my = (y0 + y3) / 2; return [a.x, y0, a.x, my, b.x, my, b.x, y3];
+  }
+  function bez(p, u) { var v = 1 - u, A = v * v * v, B = 3 * v * v * u, C = 3 * v * u * u, D = u * u * u; return [A * p[0] + B * p[2] + C * p[4] + D * p[6], A * p[1] + B * p[3] + C * p[5] + D * p[7]]; }
+  function ease(u) { return u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
+  function arrow(x, y, dx, dy, color, width, alpha) {
+    var len = Math.hypot(dx, dy);
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+    if (len < 1.2) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, 2 * PI); ctx.fill(); ctx.globalAlpha = 1; return; }
+    var ux = dx / len, uy = dy / len, hl = Math.min(8, Math.max(3.5, len * .34)), hw = hl * .55;
+    var bx = x + dx - ux * hl, by = y + dy - uy * hl;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + dx, y + dy); ctx.lineTo(bx - uy * hw, by + ux * hw); ctx.lineTo(bx + uy * hw, by - ux * hw); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  function ring(x, y, r, stroke, fill) { ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * PI); if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+  function zeroMark(x, y) { ctx.beginPath(); ctx.arc(x, y, 2.6, 0, 2 * PI); ctx.strokeStyle = COL.faint; ctx.lineWidth = 1; ctx.stroke(); }
+
+  function draw(t) {
+    if (!Gm || !states.length) return;
+    var g = Gm, n = S.n, N = g.N, k = S.cursor;
+    var after = states[k], before = states[k > 0 ? k - 1 : 0];
+    var step = k > 0 ? steps[k - 1] : null, outs = step ? step.outs : identityOuts(N);
+    var fam = step ? step.fam : "identity", fc = famColor(fam);
+    var animating = t != null && t < 1;
+    ctx.clearRect(0, 0, g.W, g.H);
+    var maxMag = 0, i, e, o, L, m;
+    for (i = 0; i < N; i++) maxMag = Math.max(maxMag, Math.hypot(before[2*i], before[2*i+1]), Math.hypot(after[2*i], after[2*i+1]));
+    var refMag = S.view.magnify ? Math.max(maxMag, 1e-9) : 1, sc = (g.r - 2) / refMag;
+    var hv = animating ? null : hover;
+    var linked = function (o, e) { return !hv || (hv.side === "a" && hv.i === o) || (hv.side === "b" && hv.i === e.k); };
+
+    ctx.textBaseline = "middle"; ctx.font = "500 12.5px " + COL.sans;
+    var nm = step ? Q.gateName(S.circuit[k - 1]) + "  " + fam : "start";
+    if (g.mode === "rows") {
+      ctx.fillStyle = COL.muted; ctx.textAlign = "center";
+      ctx.fillText(k > 0 ? "ψ" + subNum(k - 1) + " before" : "ψ₀", g.bx, 16);
+      ctx.fillText(k > 0 ? "ψ" + subNum(k) + " after" : "ψ₀", g.ax, 16);
+      ctx.fillStyle = step ? fc : COL.muted; ctx.fillText(nm, (g.bx + g.ax) / 2, 16);
+      ctx.font = "11.5px " + COL.sans; ctx.fillStyle = COL.faint;
+      if (g.right > 100) { ctx.textAlign = "left"; ctx.fillText("probability, phase", g.ax + g.r + 12, 30); }
+      ctx.textAlign = "center";
+      ctx.fillText("circle = |α| " + (S.view.magnify ? refMag.toFixed(3) : "1"), g.bx, 30);
+    } else {
+      ctx.textAlign = "left"; ctx.fillStyle = COL.muted;
+      ctx.fillText(k > 0 ? "ψ" + subNum(k - 1) + " before" : "ψ₀", 8, 12);
+      ctx.textAlign = "right"; ctx.fillStyle = COL.faint; ctx.font = "11.5px " + COL.sans;
+      ctx.fillText("circle = |α| " + (S.view.magnify ? refMag.toFixed(3) : "1"), g.W - 8, 12);
+    }
+    if (step) {
+      var p = step.comp.pairs;
+      ctx.globalAlpha = .13; ctx.fillStyle = fc;
+      for (var x = 0; x < p.length; x++) { var q0 = g.pos("b", p[x]); ctx.beginPath(); ctx.arc(q0.x, q0.y, g.r + 3, 0, 2 * PI); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.lineCap = "round";
+    for (o = 0; o < N; o++) {
+      L = outs[o];
+      for (m = 0; m < L.length; m++) {
+        e = L[m]; var pth = pathOf(e.k, o);
+        var amag = Math.hypot(before[2*e.k], before[2*e.k+1]), cm = Math.hypot(e.c[0], e.c[1]) * amag;
+        var ident = !step || !Q.changed(outs, o), strength = Math.min(1, cm / refMag);
+        var alpha = cm < 1e-9 ? .28 : .3 + .6 * strength;
+        if (!linked(o, e)) alpha *= .1;
+        ctx.globalAlpha = alpha; ctx.strokeStyle = ident ? COL.ruleS : fc;
+        ctx.lineWidth = cm < 1e-9 ? 1 : 1 + 2.6 * strength;
+        ctx.setLineDash(cm < 1e-9 ? [3, 4] : []);
+        ctx.beginPath(); ctx.moveTo(pth[0], pth[1]); ctx.bezierCurveTo(pth[2], pth[3], pth[4], pth[5], pth[6], pth[7]); ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    for (i = 0; i < N; i++) {
+      var pb = g.pos("b", i), re = before[2*i], im = before[2*i+1], mg = Math.hypot(re, im);
+      ring(pb.x, pb.y, g.r, hv && hv.side === "b" && hv.i === i ? COL.ink : COL.ruleS, COL.panel);
+      if (mg < 1e-9) zeroMark(pb.x, pb.y); else arrow(pb.x, pb.y, re * sc, -im * sc, phaseColor(re, im), 2.2, animating ? .35 : 1);
+    }
+    var tA = animating ? Math.min(1, t / .62) : 1, tB = animating ? Math.max(0, (t - .62) / .38) : 1, uA = ease(tA), uB = ease(tB);
+    for (o = 0; o < N; o++) {
+      var pa = g.pos("a", o), ar = after[2*o], ai = after[2*o+1], amg = Math.hypot(ar, ai);
+      ring(pa.x, pa.y, g.r, hv && hv.side === "a" && hv.i === o ? COL.ink : COL.ruleS, COL.panel);
+      L = outs[o];
+      if (animating) {
+        var cumR = 0, cumI = 0;
+        for (m = 0; m < L.length; m++) {
+          e = L[m];
+          var sr = before[2*e.k], si = before[2*e.k+1], smag = Math.hypot(sr, si);
+          if (smag < 1e-9) continue;
+          var cr = e.c[0] * sr - e.c[1] * si, ci = e.c[0] * si + e.c[1] * sr;
+          if (tB <= 0) {
+            var pt = bez(pathOf(e.k, o), uA), mag = smag * (1 + (Math.hypot(e.c[0], e.c[1]) - 1) * uA);
+            var ang = Math.atan2(si, sr) + Math.atan2(e.c[1], e.c[0]) * uA, vr = mag * Math.cos(ang), vi = mag * Math.sin(ang);
+            arrow(pt[0], pt[1], vr * sc, -vi * sc, phaseColor(vr, vi), 2, .95);
+          } else {
+            arrow(pa.x + cumR * sc * uB, pa.y - cumI * sc * uB, cr * sc, -ci * sc, phaseColor(cr, ci), L.length > 1 ? 1.6 : 2.2, L.length > 1 ? 1 - .45 * uB : 1);
+            cumR += cr; cumI += ci;
+          }
+        }
+        if (tB > 0) {
+          if (amg < 1e-9) { ctx.globalAlpha = uB; zeroMark(pa.x, pa.y); ctx.globalAlpha = 1; }
+          else if (L.length > 1) arrow(pa.x, pa.y, ar * sc, -ai * sc, phaseColor(ar, ai), 2.6, uB);
+        }
+      } else {
+        if (S.view.showSum && fam === "mixer" && L.length > 1) {
+          var sR = 0, sI = 0;
+          for (m = 0; m < L.length; m++) {
+            e = L[m];
+            var br = before[2*e.k], bi = before[2*e.k+1], qr = e.c[0] * br - e.c[1] * bi, qi = e.c[0] * bi + e.c[1] * br;
+            if (Math.hypot(qr, qi) < 1e-9) continue;
+            ctx.setLineDash([2.5, 2.5]);
+            arrow(pa.x + sR * sc, pa.y - sI * sc, qr * sc, -qi * sc, phaseColor(qr, qi), 1.2, .6);
+            ctx.setLineDash([]);
+            sR += qr; sI += qi;
+          }
+        }
+        if (amg < 1e-9) zeroMark(pa.x, pa.y); else arrow(pa.x, pa.y, ar * sc, -ai * sc, phaseColor(ar, ai), 2.4, 1);
+      }
+    }
+    ctx.font = (n >= 5 ? "11px " : "12px ") + COL.mono; ctx.textBaseline = "middle";
+    for (i = 0; i < N; i++) {
+      var lb = "|" + Q.bits(i, n) + "⟩", prob = after[2*i] * after[2*i] + after[2*i+1] * after[2*i+1], showVals = !animating;
+      if (g.mode === "rows") {
+        var y = g.top + g.rowH * (i + .5);
+        ctx.textAlign = "left"; ctx.fillStyle = (hv && hv.i === i) ? COL.ink : COL.muted; ctx.fillText(lb, 8, y);
+        var x0 = g.ax + g.r + 12, bwMax = g.right > 100 ? 54 : g.right - 18;
+        ctx.fillStyle = COL.soft; ctx.fillRect(x0, y - 3.5, bwMax, 7);
+        ctx.fillStyle = COL.ink; ctx.globalAlpha = showVals ? 1 : .35; ctx.fillRect(x0, y - 3.5, bwMax * prob, 7); ctx.globalAlpha = 1;
+        if (g.right > 100 && showVals) {
+          ctx.fillStyle = COL.muted; ctx.font = "11px " + COL.mono;
+          var txt = (prob * 100).toFixed(1) + "%";
+          if (prob > 1e-12) txt += " ∠" + Math.round(Math.atan2(after[2*i+1], after[2*i]) * 180 / PI) + "°";
+          ctx.fillText(txt, x0 + bwMax + 8, y);
+          ctx.font = (n >= 5 ? "11px " : "12px ") + COL.mono;
+        }
+      } else {
+        var pbx = g.pos("b", i), pax = g.pos("a", i);
+        ctx.textAlign = "center"; ctx.fillStyle = (hv && hv.i === i) ? COL.ink : COL.muted;
+        ctx.font = (g.colW < 70 ? "10.5px " : "12px ") + COL.mono;
+        ctx.fillText(lb, pbx.x, g.top - 14);
+        var bh = 30, by0 = pax.y + g.r + 8;
+        ctx.fillStyle = COL.soft; ctx.fillRect(pax.x - 5, by0, 10, bh);
+        ctx.fillStyle = COL.ink; ctx.globalAlpha = showVals ? 1 : .35; ctx.fillRect(pax.x - 5, by0 + bh * (1 - prob), 10, bh * prob); ctx.globalAlpha = 1;
+        if (showVals && g.colW >= 44) { ctx.fillStyle = COL.muted; ctx.font = "10.5px " + COL.mono; ctx.fillText((prob * 100).toFixed(prob >= .9995 ? 0 : 1) + "%", pax.x, by0 + bh + 11); }
+      }
+    }
+    if (g.mode === "cols") {
+      ctx.font = "500 12.5px " + COL.sans; ctx.textAlign = "center";
+      var midY = (g.by + g.ay) / 2, tw = ctx.measureText(nm).width + 16;
+      ctx.fillStyle = COL.panel; ctx.globalAlpha = .9; ctx.fillRect(g.W / 2 - tw / 2, midY - 11, tw, 22); ctx.globalAlpha = 1;
+      ctx.fillStyle = step ? fc : COL.muted; ctx.fillText(nm, g.W / 2, midY);
+      ctx.textAlign = "left"; ctx.fillStyle = COL.muted;
+      if (k > 0) ctx.fillText("ψ" + subNum(k) + " after", 8, g.ay - g.r - 12);
+    }
+  }
+
+  // ---------- animation ----------
+  function stopAnim() { if (anim) cancelAnimationFrame(anim); anim = 0; }
+  function stopAll() { stopAnim(); clearTimeout(animT); if (playing) { playing = false; T("play").textContent = "Play"; } }
+  function animateStep(done) {
+    stopAnim();
+    if (!S.view.animate || S.cursor === 0) { draw(null); if (done) done(); return; }
+    var t0 = performance.now(), dur = S.view.speed;
+    function frame(now) {
+      var t = Math.min(1, (now - t0) / dur);
+      draw(t < 1 ? t : null);
+      if (t < 1) anim = requestAnimationFrame(frame); else { anim = 0; if (done) done(); }
+    }
+    anim = requestAnimationFrame(frame);
+  }
+  function go(cur, animate) {
+    stopAll();
+    S.cursor = Math.max(0, Math.min(S.circuit.length, cur));
+    if (S.cursor > 0) bindEditor(S.cursor - 1); else editor.bound = null;
+    save(); renderCircuit(); renderEditor(); renderInfo();
+    if (animate) animateStep(); else draw(null);
+  }
+  function togglePlay() {
+    if (playing) { stopAll(); renderCircuit(); return; }
+    if (!S.circuit.length) return;
+    if (S.cursor >= S.circuit.length) S.cursor = 0;
+    playing = true; editor.bound = null;
+    var tick = function () {
+      if (!playing) return;
+      if (S.cursor >= S.circuit.length) { playing = false; renderCircuit(); return; }
+      S.cursor++; save(); renderCircuit(); renderInfo(); renderEditor();
+      animateStep(function () { if (playing) animT = setTimeout(tick, S.view.animate ? 260 : 600); });
+    };
+    renderCircuit(); renderEditor(); draw(null);
+    animT = setTimeout(tick, 150);
+  }
+
+  // ---------- tooltip ----------
+  function fmtAmp(re, im) {
+    if (Math.hypot(re, im) < 1e-9) return "0";
+    var a = re.toFixed(3), b = Math.abs(im).toFixed(3);
+    if (Math.abs(im) < 5e-4) return a;
+    if (Math.abs(re) < 5e-4) return (im < 0 ? "−" : "") + b + "i";
+    return a + (im < 0 ? " − " : " + ") + b + "i";
+  }
+  function hitTest(x, y) {
+    if (!Gm) return null;
+    var best = null, bd = Infinity;
+    for (var s = 0; s < 2; s++) {
+      var side = s ? "a" : "b";
+      for (var i = 0; i < Gm.N; i++) { var p = Gm.pos(side, i), d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = { side: side, i: i }; } }
+    }
+    return bd <= Gm.r + 6 ? best : null;
+  }
+  function showTip(h, x, y) {
+    var tip = $("#tip");
+    if (!h) { tip.classList.remove("on"); return; }
+    var k = S.cursor, st = h.side === "a" ? states[k] : states[k > 0 ? k - 1 : 0];
+    var re = st[2 * h.i], im = st[2 * h.i + 1], p = re * re + im * im;
+    var html = '<div class="m">|' + Q.bits(h.i, S.n) + '⟩ ' + (h.side === "a" ? "after" : "before") + '</div>' +
+      '<div class="m">α = ' + fmtAmp(re, im) + '</div>' +
+      '<div>probability ' + (p * 100).toFixed(2) + '%' + (p > 1e-12 ? ', phase ' + Math.round(Math.atan2(im, re) * 180 / PI) + '°' : "") + '</div>';
+    if (h.side === "a" && k > 0) html += '<div class="m" style="margin-top:3px">= ' + Q.formulaHTML(steps[k - 1].outs[h.i], S.n) + '</div>';
+    tip.innerHTML = html; tip.classList.add("on");
+    var wrap = $("#stageWrap").getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    var left = Math.min(Math.max(4, x + 14), wrap.width - tw - 4), top = y + 14 + th > wrap.height ? y - th - 10 : y + 14;
+    tip.style.left = left + "px"; tip.style.top = Math.max(0, top) + "px";
+  }
+
+  // ---------- render all ----------
+  function renderAll() {
+    renderHeader(); renderPalette(); renderEditor(); renderCircuit(); renderInfo();
+    layout(); draw(null);
+    $("#optLayout").value = S.view.layout; $("#optMag").checked = S.view.magnify; $("#optSum").checked = S.view.showSum;
+    $("#optAnim").checked = S.view.animate; $("#optSpeed").value = S.view.speed;
+  }
+
+  // ---------- events ----------
+  function wire() {
+    $("#nq").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b) setN(+b.dataset.n); });
+    $("#initKind").addEventListener("change", function () {
+      var v = this.value;
+      mutate(function () {
+        S.init.kind = v;
+        if (v === "basis" && !(S.init.bits && S.init.bits.length === S.n)) S.init.bits = "0".repeat(S.n);
+        if (v === "random") S.init.seed = (Math.random() * 1e9) | 0;
+      });
+      renderAll();
+    });
+    $("#initBits").addEventListener("input", function () {
+      var v = this.value.replace(/[^01]/g, "").slice(0, S.n);
+      if (this.value !== v) this.value = v;
+      if (v.length !== S.n) return;
+      mutate(function () { S.init.bits = v; });
+      renderCircuit(); renderInfo(); draw(null);
+    });
+    $("#reroll").addEventListener("click", function () { mutate(function () { S.init.seed = (Math.random() * 1e9) | 0; }); renderAll(); });
+
+    var ex = $("#example");
+    ex.innerHTML = '<option value="">Choose…</option>' + EXAMPLES.map(function (e, i) { return '<option value="' + i + '">' + e.name + '</option>'; }).join("");
+    ex.addEventListener("change", function () {
+      var e = EXAMPLES[+this.value]; if (!e) return;
+      mutate(function () {
+        S.n = e.n;
+        S.init = { kind: e.init.kind, bits: e.init.bits || "0".repeat(e.n), seed: e.init.seed || 1 };
+        S.circuit = JSON.parse(JSON.stringify(e.c)); S.cursor = 0; S.probeStart = !!e.probeStart;
+      });
+      editor.bound = null;
+      this.value = "";
+      renderAll();
+      toast("Loaded " + e.name + ". Press Play or ▶ to step through.");
+    });
+
+    // toolbox: drag to place
+    var pal = $("#palette");
+    pal.addEventListener("pointerdown", function (ev) {
+      var b = ev.target.closest(".chip"); if (!b || b.disabled) return;
+      ev.preventDefault();
+      if (b.dataset.probe) beginPointer(ev, { kind: "probe-new", label: "Bloch probe" });
+      else { var it = TEMPLATES[+b.dataset.g].items[+b.dataset.i]; beginPointer(ev, { kind: "new", item: it, label: it.label }); }
+    });
+    pal.addEventListener("click", function (ev) {
+      if (ev.detail !== 0) return;  // keyboard activation only
+      var b = ev.target.closest(".chip"); if (!b || b.disabled) return;
+      if (b.dataset.probe) {
+        if (S.view.blochAll) return;
+        mutate(function () { setProbe(S.cursor - 1, true); }); renderAll(); return;
+      }
+      var g = placement(TEMPLATES[+b.dataset.g].items[+b.dataset.i], 0, S.n);
+      if (g) insertGate(g, S.cursor);
+    });
+
+    // circuit: tap to select, drag to move or delete
+    $("#circ").addEventListener("pointerdown", function (ev) {
+      var c = ev.target.closest(".col"); if (!c) return;
+      var type = c.dataset.type;
+      if (type === "start") { go(0, false); return; }
+      var r = $("#circ").getBoundingClientRect();
+      var row = Math.max(0, Math.min(S.n - 1, Math.floor((ev.clientY - r.top - TOP) / RH)));
+      if (type === "gate") {
+        ev.preventDefault();
+        var i = +c.dataset.i;
+        beginPointer(ev, { kind: "move", i: i, row: row, label: Q.gateName(S.circuit[i]) });
+      } else if (type === "probe") {
+        ev.preventDefault();
+        var at = +c.dataset.at;
+        if (S.view.blochAll) beginPointer(ev, { kind: "probe-fixed", at: at, label: "Bloch spheres" });
+        else beginPointer(ev, { kind: "probe-move", at: at, label: "Bloch probe" });
+      }
+    });
+    $("#optBlochAll").addEventListener("change", function () { S.view.blochAll = this.checked; save(); renderCircuit(); });
+
+    var ed = $("#editor");
+    ed.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button"); if (!b) return;
+      if (b.dataset.q != null) { setRole(+b.dataset.q, b.dataset.role); return; }
+      if (b.id === "eDup") {
+        if (editor.bound === null || !editorValid()) return;
+        var g = editorGate(); delete g.probe; insertGate(g, editor.bound + 1);
+      } else if (b.id === "eProbe") {
+        var idx = editor.bound, on = !S.circuit[idx].probe;
+        mutate(function () { setProbe(idx, on); }); renderCircuit();
+        renderEditor();
+      } else if (b.id === "eDel") deleteStep(editor.bound);
+      else if (b.id === "eNew") { editor.bound = null; renderEditor(); renderCircuit(); }
+    });
+    var paramStart = false;
+    ed.addEventListener("pointerdown", function (ev) { if (ev.target.matches("input[type=range]")) paramStart = true; });
+    ed.addEventListener("input", function (ev) {
+      var el = ev.target, i = el.dataset.p != null ? +el.dataset.p : el.dataset.pn != null ? +el.dataset.pn : -1;
+      if (i < 0) return;
+      var v = parseFloat(el.value); if (!isFinite(v)) return;
+      editor.params[i] = v;
+      var other = el.dataset.p != null ? ed.querySelector('[data-pn="' + i + '"]') : ed.querySelector('[data-p="' + i + '"]');
+      if (other) other.value = v;
+      ed.querySelector(".ed-name").textContent = editorValid() ? Q.gateName(editorGate()) : BASE[editor.base].label;
+      liveApply(paramStart || el.type === "number"); paramStart = false;
+    });
+
+    T("first").onclick = function () { go(0, false); };
+    T("prev").onclick = function () { go(S.cursor - 1, false); };
+    T("next").onclick = function () { go(S.cursor + 1, true); };
+    T("last").onclick = function () { go(S.circuit.length, false); };
+    T("play").onclick = togglePlay;
+    T("replay").onclick = function () { stopAll(); animateStep(); };
+    T("undo").onclick = undo;
+    T("clear").onclick = function () { mutate(function () { S.circuit = []; S.cursor = 0; S.probeStart = false; }); editor.bound = null; renderAll(); toast("Cleared the circuit. Undo brings it back."); };
+
+    $("#optLayout").onchange = function () { S.view.layout = this.value; save(); layout(); draw(null); };
+    $("#optMag").onchange = function () { S.view.magnify = this.checked; save(); draw(null); };
+    $("#optSum").onchange = function () { S.view.showSum = this.checked; save(); draw(null); };
+    $("#optAnim").onchange = function () { S.view.animate = this.checked; save(); };
+    $("#optSpeed").oninput = function () { S.view.speed = +this.value; save(); };
+    $("#qruth").addEventListener("change", function (ev) {
+      if (ev.target.id === "optChanged") { S.view.changedOnly = ev.target.checked; save(); renderInfo(); }
+    });
+
+    var wrapEl = $("#stageWrap");
+    cv.addEventListener("pointermove", function (ev) {
+      if (anim || drag) return;
+      var r = cv.getBoundingClientRect(), h = hitTest(ev.clientX - r.left, ev.clientY - r.top), wr = wrapEl.getBoundingClientRect();
+      var same = (h && hover && h.side === hover.side && h.i === hover.i) || (!h && !hover);
+      hover = h;
+      if (!same) draw(null);
+      showTip(h, ev.clientX - wr.left, ev.clientY - wr.top);
+    });
+    cv.addEventListener("pointerleave", function () { hover = null; showTip(null); if (!anim) draw(null); });
+
+    document.addEventListener("keydown", function (ev) {
+      var tag = (ev.target.tagName || "").toLowerCase();
+      if (ev.key === "Escape" && drag) { onCancel(); return; }
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z") { if (tag !== "input" || ev.target.type === "range" || ev.target.type === "checkbox") { ev.preventDefault(); undo(); } return; }
+      if (tag === "input" || tag === "select" || tag === "textarea") return;
+      if (ev.key === "ArrowRight") { ev.preventDefault(); go(S.cursor + 1, true); }
+      else if (ev.key === "ArrowLeft") { ev.preventDefault(); go(S.cursor - 1, false); }
+      else if (ev.key === "Home") { ev.preventDefault(); go(0, false); }
+      else if (ev.key === "End") { ev.preventDefault(); go(S.circuit.length, false); }
+      else if (ev.key === " " && tag !== "button") { ev.preventDefault(); togglePlay(); }
+      else if (ev.key === "r" || ev.key === "R") { stopAll(); animateStep(); }
+      else if ((ev.key === "Delete" || ev.key === "Backspace") && editor.bound !== null) { ev.preventDefault(); deleteStep(editor.bound); }
+    });
+
+    var rq = 0;
+    var lastW = -1;
+    new ResizeObserver(function () {
+      cancelAnimationFrame(rq);
+      rq = requestAnimationFrame(function () {
+        var w = wrapEl.clientWidth;
+        if (w === lastW) return;          // height changes come from our own canvas; ignore them
+        lastW = w; layout(); if (!anim) draw(null);
+      });
+    }).observe(wrapEl);
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var themeChange = function () { readColors(); renderCircuit(); renderPalette(); draw(null); };
+    if (mq.addEventListener) mq.addEventListener("change", themeChange);
+    new MutationObserver(themeChange).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { draw(null); });
+  }
+
+  // ---------- theme ----------
+  var THEME_KEY = "amplitude-bench-theme";
+  function currentTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    if (t === "light" || t === "dark") return t;
+    return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function renderThemeToggle() {
+    var cur = currentTheme();
+    document.querySelectorAll("#theme button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.theme === cur)); });
+  }
+  function setTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+    renderThemeToggle();
+  }
+  (function initTheme() {
+    var t = null;
+    try { t = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    $("#theme").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b) setTheme(b.dataset.theme); });
+    if (window.matchMedia) { var m = matchMedia("(prefers-color-scheme: dark)"); if (m.addEventListener) m.addEventListener("change", renderThemeToggle); }
+    renderThemeToggle();
+  })();
+
+  // ---------- boot ----------
+  function boot() {
+    if (!load()) {
+      var e = EXAMPLES[0];
+      S.n = e.n; S.init = { kind: "zero", bits: "00", seed: 1 }; S.circuit = JSON.parse(JSON.stringify(e.c)); S.cursor = 0; S.probeStart = !!e.probeStart;
+    }
+    readColors();
+    recompute();
+    wire();
+    renderAll();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
