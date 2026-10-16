@@ -24,15 +24,6 @@
   --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0E1218; --panel:#151B23; --soft:#1B222C; --ink:#E4E9F0; --muted:#9AA5B4; --faint:#6C7787;
-    --rule:#28313D; --rule-strong:#3A4553; --accent:#7096FF; --sel:rgba(112,150,255,.13); --danger:#F0705F;
-    --mover:#A08CF5; --rotator:#E6A848; --mixer:#3FC4B5; --identity:#6C7787; --bloch:#7096FF;
-    --phase-l:66%; --phase-s:72%;
-    color-scheme: dark;
-  }
-}
 :root[data-theme="dark"]{
   --bg:#0E1218; --panel:#151B23; --soft:#1B222C; --ink:#E4E9F0; --muted:#9AA5B4; --faint:#6C7787;
   --rule:#28313D; --rule-strong:#3A4553; --accent:#7096FF; --sel:rgba(112,150,255,.13); --danger:#F0705F;
@@ -66,6 +57,9 @@ button{ cursor:pointer; }
 .seg button:last-child{ border-right:0; }
 .seg button[aria-pressed="true"]{ background:var(--ink); color:var(--panel); }
 #theme button{ font-family:var(--sans); font-size:13.5px; }
+.gh{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border:1px solid var(--rule-strong); border-radius:8px; background:var(--panel); color:var(--ink); }
+.gh:hover{ border-color:var(--ink); }
+.gh svg{ width:18px; height:18px; fill:currentColor; }
 select,input[type=text],input[type=number]{ background:var(--panel); border:1px solid var(--rule-strong); border-radius:7px; padding:6px 8px; min-height:34px; }
 input[type=text]{ font-family:var(--mono); width:9ch; }
 .btn{ background:var(--panel); border:1px solid var(--rule-strong); border-radius:7px; padding:6px 11px; min-height:34px; }
@@ -218,6 +212,9 @@ input[type=range]{ accent-color:var(--accent); width:100%; }
     <p>Drag gates onto the circuit and step through it. Every gate either moves, rotates or mixes the 2ⁿ amplitudes of the statevector, and you can watch each one happen.</p>
   </div>
   <div class="hdr">
+    <a class="gh" href="https://github.com/saadbhattii/argvec" target="_blank" rel="noopener" aria-label="Argvec on GitHub" title="Argvec on GitHub">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
+    </a>
     <div class="field">
       <span class="flabel" id="nqLabel">Qubits</span>
       <div class="seg" id="nq" role="group" aria-labelledby="nqLabel"></div>
@@ -1613,9 +1610,7 @@ if (typeof module !== "undefined") module.exports = Q;
         lastW = w; layout(); if (!anim) draw(null);
       });
     }).observe(wrapEl);
-    var mq = window.matchMedia("(prefers-color-scheme: dark)");
     var themeChange = function () { readColors(); renderCircuit(); renderPalette(); draw(null); };
-    if (mq.addEventListener) mq.addEventListener("change", themeChange);
     new MutationObserver(themeChange).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { draw(null); });
   }
@@ -1623,9 +1618,7 @@ if (typeof module !== "undefined") module.exports = Q;
   // ---------- theme ----------
   var THEME_KEY = "argvec-theme";
   function currentTheme() {
-    var t = document.documentElement.getAttribute("data-theme");
-    if (t === "light" || t === "dark") return t;
-    return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
   }
   function renderThemeToggle() {
     var cur = currentTheme();
@@ -1641,7 +1634,6 @@ if (typeof module !== "undefined") module.exports = Q;
     try { t = localStorage.getItem(THEME_KEY); } catch (e) {}
     if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
     $("#theme").addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (b) setTheme(b.dataset.theme); });
-    if (window.matchMedia) { var m = matchMedia("(prefers-color-scheme: dark)"); if (m.addEventListener) m.addEventListener("change", renderThemeToggle); }
     renderThemeToggle();
   })();
 
