@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="Argvec logo" width="160">
+</p>
+
 <h1 align="left">
   Argvec
 </h1>
@@ -44,10 +48,6 @@ Checks the gate engine against brute-force matrix multiplication on thousands of
 ## Conventions
 
 q1 is the leftmost bit of a basis state, `|q1 q2 q3⟩`. Some libraries, such as Qiskit, use the opposite order.
-
-## Credits
-
-Favicon: the "atom" icon from [Lucide](https://lucide.dev), used under the ISC License (see [`assets/LICENSE-lucide.txt`](assets/LICENSE-lucide.txt)).
 
 ## License
 
