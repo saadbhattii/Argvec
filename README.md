@@ -8,7 +8,9 @@ Quantum mechanics is formulated over complex Hilbert spaces. Yet many of our com
 
 This project was created out of curiosity for visualizing quantum states in their native complex representation, and how the statevector itself evolves through unitary transformations.
 
-## User Interface
+## Demo
+
+[![Watch the Argvec demo](docs/demo-preview.jpg)](docs/demo.mp4)
 
 ![Argvec](docs/screenshot.png)
 
