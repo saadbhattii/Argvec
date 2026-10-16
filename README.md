@@ -1,6 +1,5 @@
 <h1 align="left">
   Argvec
-  <a href="https://saadbhattii.github.io/amplitude-bench/" style="font-size: 0.5em; vertical-align: middle;">[live]</a>
 </h1>
 
 Argvec is a quantum statevector visualizer with a drag-and-drop circuit builder for up to 5 qubits or 32 amplitudes. For each step it shows the whole statevector before and after the gate, and animates how the amplitudes evolve from one to the other.
