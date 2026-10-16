@@ -6,7 +6,7 @@
   Argvec
 </h1>
 
-Argvec is a quantum statevector visualizer with a drag-and-drop circuit builder for up to 5 qubits or 32 amplitudes. For each step it shows the whole statevector before and after the gate, and animates how the amplitudes evolve from one to the other.
+Argvec is a quantum statevector visualizer with a drag-and-drop circuit builder supporting up to 5 qubits. For each quantum gate, it visualizes how the entire statevector evolves and animates the transformation of each complex amplitude.
 
 Quantum mechanics is formulated over complex Hilbert spaces. Yet many of our common visual and pedagogical tools translate quantum states into real-valued representations, emphasizing geometry or probabilities over the complex amplitudes themselves.
 
