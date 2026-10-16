@@ -1,9 +1,8 @@
 <h1 align="left">
-  Amplitude Bench
-  <a href="https://saadbhattii.github.io/amplitude-bench/" style="font-size: 0.5em; vertical-align: middle;">[live]</a>
+  Argvec
 </h1>
 
-Amplitude bench is a quantum statevector visualizer with a drag-and-drop circuit builder for up to 5 qubits or 32 amplitudes. For each step it shows the whole statevector before and after the gate, and animates how the amplitudes evolve from one to the other.
+Argvec is a quantum statevector visualizer with a drag-and-drop circuit builder for up to 5 qubits or 32 amplitudes. For each step it shows the whole statevector before and after the gate, and animates how the amplitudes evolve from one to the other.
 
 Quantum mechanics is formulated over complex Hilbert spaces. Yet many of our common visual and pedagogical tools translate quantum states into real-valued representations, emphasizing geometry or probabilities over the complex amplitudes themselves.
 
@@ -11,7 +10,7 @@ This project was created out of curiosity for visualizing quantum states in thei
 
 ## User Interface
 
-![Amplitude bench](docs/screenshot.png)
+![Argvec](docs/screenshot.png)
 
 ## Features
 
