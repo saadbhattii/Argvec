@@ -1,4 +1,4 @@
-# Checks the gate engine on every pull request and every push to main.
+# Runs the tests and builds the site on every pull request and every push to main.
 name: Tests
 
 on:
@@ -22,5 +22,5 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-      - name: Check the gate engine
-        run: node tests/run.js
+      - name: Test and build the site
+        run: sh scripts/build.sh
