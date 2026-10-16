@@ -1,10 +1,5 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="Argvec logo" width="160">
-</p>
-
-<h1 align="left">
+<h1 align="center">
   Argvec
-  <a href="https://argvec.pages.dev/" style="font-size: 0.5em; vertical-align: middle;">[@]</a>
 </h1>
 
 Argvec is a browser-based quantum statevector visualizer with a drag-and-drop circuit builder supporting up to 5 qubits. For each quantum gate, it visualizes how the entire statevector evolves and animates the transformation of each complex amplitude.
