@@ -10,7 +10,7 @@ This project was created out of curiosity for visualizing quantum states in thei
 
 ## Demo
 
-[![Watch the Argvec demo](docs/demo-preview.jpg)](docs/demo.mp4)
+[![Watch the Argvec demo](docs/demo-preview.jpg)](https://youtu.be/fuFHgfgb93w)
 
 ![Argvec](docs/screenshot.png)
 
