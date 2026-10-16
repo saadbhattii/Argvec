@@ -12,6 +12,8 @@ This project was created out of curiosity for visualizing quantum states in thei
 
 [![Watch the Argvec demo](docs/demo-preview.jpg)](https://youtu.be/fuFHgfgb93w)
 
+## User Interface
+
 ![Argvec](docs/screenshot.png)
 
 ## Features
