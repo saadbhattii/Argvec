@@ -4,9 +4,14 @@
 
 <h1 align="left">
   Argvec
+  <a href="https://argvec.pages.dev/" style="font-size: 0.5em; vertical-align: middle;">[@]</a>
 </h1>
 
-Argvec is a quantum statevector visualizer with a drag-and-drop circuit builder supporting up to 5 qubits. For each quantum gate, it visualizes how the entire statevector evolves and animates the transformation of each complex amplitude.
+Argvec is a browser-based quantum statevector visualizer with a drag-and-drop circuit builder supporting up to 5 qubits. For each quantum gate, it visualizes how the entire statevector evolves and animates the transformation of each complex amplitude.
+
+There's no installing, configuring, or scripting required: just go to https://argvec.pages.dev/, drag gates, and the output displays update in real time.
+
+## Why?
 
 Quantum mechanics is formulated over complex Hilbert spaces. Yet many of our common visual and pedagogical tools translate quantum states into real-valued representations, emphasizing geometry or probabilities over the complex amplitudes themselves.
 
@@ -15,10 +20,6 @@ This project was created out of curiosity for visualizing quantum states in thei
 ## Demo
 
 [![Watch the Argvec demo](docs/demo-preview.jpg)](https://youtu.be/fuFHgfgb93w)
-
-## User Interface
-
-![Argvec](docs/screenshot.png)
 
 ## Features
 
